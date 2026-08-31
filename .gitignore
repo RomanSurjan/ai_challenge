@@ -1,0 +1,10 @@
+# Local secrets
+.env
+
+# Local Codex files
+codex/
+
+# Go build artifacts
+bin/
+*.test
+coverage.out
