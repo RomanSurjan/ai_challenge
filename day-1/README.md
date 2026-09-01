@@ -26,19 +26,19 @@ DEEPSEEK_MODEL=deepseek-v4-flash
 ## Запуск
 
 ```bash
-go run . -prompt "Объясни, что такое интерфейсы в Go, простыми словами"
+go run ./day-1 -prompt "Объясни, что такое интерфейсы в Go, простыми словами"
 ```
 
 Или через stdin:
 
 ```bash
-echo "Напиши короткий план изучения Go" | go run .
+echo "Напиши короткий план изучения Go" | go run ./day-1
 ```
 
 Дополнительные параметры:
 
 ```bash
-go run . \
+go run ./day-1 \
   -model deepseek-v4-pro \
   -temperature 0.4 \
   -max-tokens 800 \
