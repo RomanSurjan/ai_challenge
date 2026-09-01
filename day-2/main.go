@@ -257,12 +257,23 @@ func movieReviewSystemInstruction(stopSequence string) string {
   }
 }
 
-Если запрос пользователя является запросом на рецензию фильма, заполни:
+Если пользователь просит рецензию, отзыв, обзор фильма или передает только название фильма без дополнительных слов, считай это запросом на рецензию фильма.
+Если название неоднозначно и существует несколько экранизаций, выбери наиболее известную полнометражную экранизацию и кратко отметь неоднозначность в short_description.
+
+Правила заполнения для рецензии фильма:
+- "title": всегда непустая строка с выбранным названием фильма.
+- "release_date": строка с датой или годом релиза; если не уверен, используй пустую строку "".
+- "rating": всегда непустая строка с твоей оценкой в формате "N/10", например "7/10"; не используй null и не оставляй пустым.
+- "short_description": всегда непустая строка с краткой рецензией.
+- "actors": массив строк; если актеры неизвестны, используй пустой массив [].
+- "error": null.
+
+Для запроса на рецензию фильма заполни:
 {
   "is_movie_review": true,
   "title": "...",
-  "release_date": "...",
-  "rating": "...",
+  "release_date": "YYYY",
+  "rating": "7/10",
   "short_description": "...",
   "actors": ["..."],
   "error": null
@@ -336,9 +347,6 @@ func validateMovieReviewJSON(raw, stopSequence string) (string, error) {
 	if parsed.IsMovieReview {
 		if isEmptyStringPointer(parsed.Title) {
 			return "", errors.New(`для рецензии фильма поле "title" должно быть непустой строкой`)
-		}
-		if isEmptyStringPointer(parsed.ReleaseDate) {
-			return "", errors.New(`для рецензии фильма поле "release_date" должно быть непустой строкой`)
 		}
 		if isEmptyStringPointer(parsed.Rating) {
 			return "", errors.New(`для рецензии фильма поле "rating" должно быть непустой строкой`)
