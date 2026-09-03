@@ -8,3 +8,6 @@ codex/
 bin/
 *.test
 coverage.out
+
+# macOS metadata
+.DS_Store

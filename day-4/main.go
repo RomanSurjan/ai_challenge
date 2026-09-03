@@ -22,8 +22,8 @@ const (
 	defaultBaseURL     = "https://api.deepseek.com"
 	defaultModel       = "deepseek-v4-flash"
 	defaultTemperature = 0.2
-	defaultTimeout     = 180 * time.Second
-	defaultMaxTokens   = 8192
+	defaultTimeout     = 90 * time.Second
+	defaultMaxTokens   = 2048
 	defaultTaskName    = "tree_diameter"
 )
 
@@ -48,11 +48,6 @@ type tokenUsage struct {
 	PromptTokens     int `json:"prompt_tokens"`
 	CompletionTokens int `json:"completion_tokens"`
 	TotalTokens      int `json:"total_tokens"`
-}
-
-type completionMeta struct {
-	Usage        *tokenUsage
-	FinishReason string
 }
 
 type chatResponse struct {
@@ -88,7 +83,7 @@ type experimentResult struct {
 	Title       string
 	Prompt      string
 	Answer      string
-	Meta        completionMeta
+	Usage       *tokenUsage
 	Preparatory *experimentResult
 }
 
@@ -200,7 +195,7 @@ func runExperiment(ctx context.Context, client *http.Client, cfg config) ([]expe
 
 	results := make([]experimentResult, 0, 4)
 	for _, strategy := range strategies {
-		answer, meta, err := requestCompletion(ctx, client, cfg.withPrompt(strategy.prompt))
+		answer, usage, err := requestCompletion(ctx, client, cfg.withPrompt(strategy.prompt))
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", strategy.title, err)
 		}
@@ -208,17 +203,17 @@ func runExperiment(ctx context.Context, client *http.Client, cfg config) ([]expe
 			Title:  strategy.title,
 			Prompt: strategy.prompt,
 			Answer: answer,
-			Meta:   meta,
+			Usage:  usage,
 		})
 	}
 
 	promptBuilderPrompt := buildPromptBuilderPrompt(cfg.Prompt)
-	generatedPrompt, promptMeta, err := requestCompletion(ctx, client, cfg.withPrompt(promptBuilderPrompt))
+	generatedPrompt, promptUsage, err := requestCompletion(ctx, client, cfg.withPrompt(promptBuilderPrompt))
 	if err != nil {
 		return nil, fmt.Errorf("3. Генерация промпта: %w", err)
 	}
 
-	promptedAnswer, promptedMeta, err := requestCompletion(ctx, client, cfg.withPrompt(generatedPrompt))
+	promptedAnswer, promptedUsage, err := requestCompletion(ctx, client, cfg.withPrompt(generatedPrompt))
 	if err != nil {
 		return nil, fmt.Errorf("3. Решение по сгенерированному промпту: %w", err)
 	}
@@ -226,17 +221,17 @@ func runExperiment(ctx context.Context, client *http.Client, cfg config) ([]expe
 		Title:  "3. Сначала промпт, затем решение",
 		Prompt: generatedPrompt,
 		Answer: promptedAnswer,
-		Meta:   promptedMeta,
+		Usage:  promptedUsage,
 		Preparatory: &experimentResult{
 			Title:  "Промпт для генерации промпта",
 			Prompt: promptBuilderPrompt,
 			Answer: generatedPrompt,
-			Meta:   promptMeta,
+			Usage:  promptUsage,
 		},
 	})
 
 	expertPrompt := buildExpertPrompt(cfg.Prompt)
-	expertAnswer, expertMeta, err := requestCompletion(ctx, client, cfg.withPrompt(expertPrompt))
+	expertAnswer, expertUsage, err := requestCompletion(ctx, client, cfg.withPrompt(expertPrompt))
 	if err != nil {
 		return nil, fmt.Errorf("4. Группа экспертов: %w", err)
 	}
@@ -244,13 +239,13 @@ func runExperiment(ctx context.Context, client *http.Client, cfg config) ([]expe
 		Title:  "4. Группа экспертов",
 		Prompt: expertPrompt,
 		Answer: expertAnswer,
-		Meta:   expertMeta,
+		Usage:  expertUsage,
 	})
 
 	return results, nil
 }
 
-func requestCompletion(ctx context.Context, client *http.Client, cfg config) (string, completionMeta, error) {
+func requestCompletion(ctx context.Context, client *http.Client, cfg config) (string, *tokenUsage, error) {
 	ctx, cancel := context.WithTimeout(ctx, cfg.Timeout)
 	defer cancel()
 
@@ -266,12 +261,12 @@ func requestCompletion(ctx context.Context, client *http.Client, cfg config) (st
 
 	payload, err := json.Marshal(reqBody)
 	if err != nil {
-		return "", completionMeta{}, fmt.Errorf("не удалось собрать JSON-запрос: %w", err)
+		return "", nil, fmt.Errorf("не удалось собрать JSON-запрос: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, cfg.BaseURL+"/chat/completions", bytes.NewReader(payload))
 	if err != nil {
-		return "", completionMeta{}, fmt.Errorf("не удалось создать HTTP-запрос: %w", err)
+		return "", nil, fmt.Errorf("не удалось создать HTTP-запрос: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
 	req.Header.Set("Content-Type", "application/json")
@@ -279,36 +274,33 @@ func requestCompletion(ctx context.Context, client *http.Client, cfg config) (st
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", completionMeta{}, fmt.Errorf("DeepSeek API недоступен: %w", err)
+		return "", nil, fmt.Errorf("DeepSeek API недоступен: %w", err)
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", completionMeta{}, fmt.Errorf("не удалось прочитать ответ DeepSeek: %w", err)
+		return "", nil, fmt.Errorf("не удалось прочитать ответ DeepSeek: %w", err)
 	}
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return "", completionMeta{}, fmt.Errorf("DeepSeek API вернул HTTP %d: %s", resp.StatusCode, formatAPIError(respBody))
+		return "", nil, fmt.Errorf("DeepSeek API вернул HTTP %d: %s", resp.StatusCode, formatAPIError(respBody))
 	}
 
 	var decoded chatResponse
 	if err := json.Unmarshal(respBody, &decoded); err != nil {
-		return "", completionMeta{}, fmt.Errorf("не удалось разобрать JSON-ответ DeepSeek: %w", err)
+		return "", nil, fmt.Errorf("не удалось разобрать JSON-ответ DeepSeek: %w", err)
 	}
 	if len(decoded.Choices) == 0 {
-		return "", completionMeta{}, errors.New("DeepSeek API вернул ответ без choices")
+		return "", nil, errors.New("DeepSeek API вернул ответ без choices")
 	}
 
 	answer := strings.TrimSpace(decoded.Choices[0].Message.Content)
 	if answer == "" {
-		return "", completionMeta{}, errors.New("DeepSeek API вернул пустой ответ")
+		return "", nil, errors.New("DeepSeek API вернул пустой ответ")
 	}
 
-	return answer, completionMeta{
-		Usage:        decoded.Usage,
-		FinishReason: decoded.Choices[0].FinishReason,
-	}, nil
+	return answer, decoded.Usage, nil
 }
 
 func buildMessages(cfg config) []chatMessage {
@@ -376,7 +368,7 @@ func printReport(w io.Writer, cfg config, results []experimentResult) {
 			fmt.Fprintln(w, "### Сгенерированный промпт")
 			fmt.Fprintln(w)
 			fmt.Fprintln(w, result.Preparatory.Answer)
-			printMeta(w, result.Preparatory.Meta)
+			printUsage(w, result.Preparatory.Usage)
 			fmt.Fprintln(w)
 		}
 
@@ -387,22 +379,17 @@ func printReport(w io.Writer, cfg config, results []experimentResult) {
 		fmt.Fprintln(w, "### Ответ")
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, result.Answer)
-		printMeta(w, result.Meta)
+		printUsage(w, result.Usage)
 		fmt.Fprintln(w)
 	}
 }
 
-func printMeta(w io.Writer, meta completionMeta) {
+func printUsage(w io.Writer, usage *tokenUsage) {
+	if usage == nil {
+		return
+	}
 	fmt.Fprintln(w)
-	if meta.FinishReason != "" {
-		fmt.Fprintf(w, "_Finish reason: %s_\n", meta.FinishReason)
-		if meta.FinishReason == "length" {
-			fmt.Fprintln(w, "_Warning: ответ достиг лимита `max_tokens` и может быть обрезан._")
-		}
-	}
-	if meta.Usage != nil {
-		fmt.Fprintf(w, "_Tokens: prompt=%d completion=%d total=%d_\n", meta.Usage.PromptTokens, meta.Usage.CompletionTokens, meta.Usage.TotalTokens)
-	}
+	fmt.Fprintf(w, "_Tokens: prompt=%d completion=%d total=%d_\n", usage.PromptTokens, usage.CompletionTokens, usage.TotalTokens)
 }
 
 func writeReport(path string, content []byte) error {
