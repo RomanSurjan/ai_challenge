@@ -26,7 +26,7 @@ const (
 	defaultTaskName  = "temperature_experiment"
 )
 
-var experimentTemperatures = []float64{0, 0.7, 1.2}
+var experimentTemperatures = []float64{0, 0.7, 1.2, 1.8}
 
 type chatMessage struct {
 	Role    string `json:"role"`
@@ -391,6 +391,7 @@ func printConclusions(w io.Writer) {
 	fmt.Fprintln(w, "- `temperature = 0` лучше использовать для задач, где важны стабильность, точность и повторяемость: алгоритмы, факты, инструкции, проверяемый код.")
 	fmt.Fprintln(w, "- `temperature = 0.7` подходит для большинства рабочих задач: ответ остается достаточно управляемым, но становится живее и может предлагать разные формулировки.")
 	fmt.Fprintln(w, "- `temperature = 1.2` полезна для креативных идей, вариантов текста и мозгового штурма, но ее ответы нужно внимательнее проверять: выше шанс лишних допущений и отклонений от задачи.")
+	fmt.Fprintln(w, "- `temperature = 1.8` стоит использовать только для очень свободного поиска идей и неожиданных формулировок: ответы могут быть ярче, но контроль, точность и следование инструкции заметно снижаются.")
 }
 
 func envOrDefault(key, fallback string) string {
