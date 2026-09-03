@@ -19,13 +19,14 @@ import (
 )
 
 const (
-	defaultBaseURL     = "https://api.deepseek.com"
-	defaultModel       = "deepseek-v4-flash"
-	defaultTemperature = 0.2
-	defaultTimeout     = 90 * time.Second
-	defaultMaxTokens   = 2048
-	defaultTaskName    = "tree_diameter"
+	defaultBaseURL   = "https://api.deepseek.com"
+	defaultModel     = "deepseek-v4-flash"
+	defaultTimeout   = 90 * time.Second
+	defaultMaxTokens = 2048
+	defaultTaskName  = "temperature_experiment"
 )
+
+var experimentTemperatures = []float64{0, 0.7, 1.2}
 
 type chatMessage struct {
 	Role    string `json:"role"`
@@ -39,7 +40,7 @@ type thinkingConfig struct {
 type chatRequest struct {
 	Model       string          `json:"model"`
 	Messages    []chatMessage   `json:"messages"`
-	Temperature float64         `json:"temperature,omitempty"`
+	Temperature float64         `json:"temperature"`
 	MaxTokens   int             `json:"max_tokens,omitempty"`
 	Thinking    *thinkingConfig `json:"thinking,omitempty"`
 }
@@ -65,26 +66,24 @@ type apiError struct {
 }
 
 type config struct {
-	APIKey      string
-	BaseURL     string
-	Model       string
-	System      string
-	Prompt      string
-	Timeout     time.Duration
-	MaxTokens   int
-	Temperature float64
-	Thinking    bool
-	TaskName    string
-	OutputPath  string
-	OpenReport  bool
+	APIKey     string
+	BaseURL    string
+	Model      string
+	System     string
+	Prompt     string
+	Timeout    time.Duration
+	MaxTokens  int
+	Thinking   bool
+	TaskName   string
+	OutputPath string
+	OpenReport bool
 }
 
 type experimentResult struct {
-	Title       string
+	Temperature float64
 	Prompt      string
 	Answer      string
 	Usage       *tokenUsage
-	Preparatory *experimentResult
 }
 
 func main() {
@@ -127,17 +126,16 @@ func readConfig(args []string, stdin io.Reader) (config, error) {
 		return config{}, err
 	}
 
-	flags := flag.NewFlagSet("day-3-prompting-experiment", flag.ContinueOnError)
+	flags := flag.NewFlagSet("day-4-temperature-experiment", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
 
 	var cfg config
-	flags.StringVar(&cfg.Prompt, "prompt", "", "task to solve through four prompting strategies")
+	flags.StringVar(&cfg.Prompt, "prompt", "", "same request to run with different temperatures")
 	flags.StringVar(&cfg.Model, "model", envOrDefault("DEEPSEEK_MODEL", defaultModel), "DeepSeek model")
 	flags.StringVar(&cfg.BaseURL, "base-url", envOrDefault("DEEPSEEK_BASE_URL", defaultBaseURL), "DeepSeek API base URL")
 	flags.StringVar(&cfg.System, "system", "", "optional system message")
 	flags.DurationVar(&cfg.Timeout, "timeout", defaultTimeout, "request timeout")
 	flags.IntVar(&cfg.MaxTokens, "max-tokens", defaultMaxTokens, "maximum response tokens per API call")
-	flags.Float64Var(&cfg.Temperature, "temperature", defaultTemperature, "sampling temperature")
 	flags.BoolVar(&cfg.Thinking, "thinking", false, "enable DeepSeek thinking mode when supported")
 	flags.StringVar(&cfg.TaskName, "task-name", defaultTaskName, "task name for the default answer_<task_name>.md report")
 	flags.StringVar(&cfg.OutputPath, "out", "", "path to save Markdown report")
@@ -179,80 +177,30 @@ func readConfig(args []string, stdin io.Reader) (config, error) {
 }
 
 func runExperiment(ctx context.Context, client *http.Client, cfg config) ([]experimentResult, error) {
-	strategies := []struct {
-		title  string
-		prompt string
-	}{
-		{
-			title:  "1. Прямой ответ",
-			prompt: cfg.Prompt,
-		},
-		{
-			title:  "2. Инструкция «решай пошагово»",
-			prompt: cfg.Prompt + "\n\nРешай пошагово.",
-		},
-	}
-
-	results := make([]experimentResult, 0, 4)
-	for _, strategy := range strategies {
-		answer, usage, err := requestCompletion(ctx, client, cfg.withPrompt(strategy.prompt))
+	results := make([]experimentResult, 0, len(experimentTemperatures))
+	for _, temperature := range experimentTemperatures {
+		answer, usage, err := requestCompletion(ctx, client, cfg, temperature)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", strategy.title, err)
+			return nil, fmt.Errorf("temperature %.1f: %w", temperature, err)
 		}
 		results = append(results, experimentResult{
-			Title:  strategy.title,
-			Prompt: strategy.prompt,
-			Answer: answer,
-			Usage:  usage,
+			Temperature: temperature,
+			Prompt:      cfg.Prompt,
+			Answer:      answer,
+			Usage:       usage,
 		})
 	}
-
-	promptBuilderPrompt := buildPromptBuilderPrompt(cfg.Prompt)
-	generatedPrompt, promptUsage, err := requestCompletion(ctx, client, cfg.withPrompt(promptBuilderPrompt))
-	if err != nil {
-		return nil, fmt.Errorf("3. Генерация промпта: %w", err)
-	}
-
-	promptedAnswer, promptedUsage, err := requestCompletion(ctx, client, cfg.withPrompt(generatedPrompt))
-	if err != nil {
-		return nil, fmt.Errorf("3. Решение по сгенерированному промпту: %w", err)
-	}
-	results = append(results, experimentResult{
-		Title:  "3. Сначала промпт, затем решение",
-		Prompt: generatedPrompt,
-		Answer: promptedAnswer,
-		Usage:  promptedUsage,
-		Preparatory: &experimentResult{
-			Title:  "Промпт для генерации промпта",
-			Prompt: promptBuilderPrompt,
-			Answer: generatedPrompt,
-			Usage:  promptUsage,
-		},
-	})
-
-	expertPrompt := buildExpertPrompt(cfg.Prompt)
-	expertAnswer, expertUsage, err := requestCompletion(ctx, client, cfg.withPrompt(expertPrompt))
-	if err != nil {
-		return nil, fmt.Errorf("4. Группа экспертов: %w", err)
-	}
-	results = append(results, experimentResult{
-		Title:  "4. Группа экспертов",
-		Prompt: expertPrompt,
-		Answer: expertAnswer,
-		Usage:  expertUsage,
-	})
-
 	return results, nil
 }
 
-func requestCompletion(ctx context.Context, client *http.Client, cfg config) (string, *tokenUsage, error) {
+func requestCompletion(ctx context.Context, client *http.Client, cfg config, temperature float64) (string, *tokenUsage, error) {
 	ctx, cancel := context.WithTimeout(ctx, cfg.Timeout)
 	defer cancel()
 
 	reqBody := chatRequest{
 		Model:       cfg.Model,
 		Messages:    buildMessages(cfg),
-		Temperature: cfg.Temperature,
+		Temperature: temperature,
 		MaxTokens:   cfg.MaxTokens,
 	}
 	if !cfg.Thinking {
@@ -313,38 +261,8 @@ func buildMessages(cfg config) []chatMessage {
 	}
 }
 
-func buildPromptBuilderPrompt(task string) string {
-	return `Составь эффективный промпт для решения задачи ниже.
-Верни только готовый промпт, без markdown, без кавычек и без самого решения.
-Промпт должен помогать получить точный ответ и проверку результата.
-
-Задача:
-` + task
-}
-
-func buildExpertPrompt(task string) string {
-	return `Реши задачу через командную работу экспертов.
-
-Эксперты:
-- Аналитик: формализует условие и решает логически.
-- Инженер: ищет алгоритмический или вычислительный способ решения.
-- Критик: проверяет ответы, ищет ошибки и спорные места.
-
-Эксперты должны работать как одна команда над одним решением:
-1. Аналитик формулирует ключевую идею.
-2. Инженер превращает идею в алгоритм и оценивает сложность.
-3. Критик проверяет решение на крайних случаях и ограничениях.
-4. Команда вместе дает финальный согласованный ответ.
-
-Не выдавай три независимых решения.
-В конце добавь раздел "Итог команды" с наиболее надежным ответом.
-
-Задача:
-` + task
-}
-
 func printReport(w io.Writer, cfg config, results []experimentResult) {
-	fmt.Fprintln(w, "# Day 3: четыре способа решения через API")
+	fmt.Fprintln(w, "# Day 4: влияние temperature на ответ модели")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "## Задача")
 	fmt.Fprintln(w)
@@ -353,35 +271,21 @@ func printReport(w io.Writer, cfg config, results []experimentResult) {
 	fmt.Fprintln(w, "## Настройки")
 	fmt.Fprintln(w)
 	fmt.Fprintf(w, "- model: `%s`\n", cfg.Model)
-	fmt.Fprintf(w, "- temperature: `%.2f`\n", cfg.Temperature)
+	fmt.Fprintf(w, "- temperatures: `%s`\n", formatTemperatures(experimentTemperatures))
 	fmt.Fprintf(w, "- max_tokens: `%d`\n", cfg.MaxTokens)
 	fmt.Fprintf(w, "- task_name: `%s`\n", cfg.TaskName)
 	fmt.Fprintln(w)
 
 	for _, result := range results {
-		fmt.Fprintf(w, "## %s\n\n", result.Title)
-		if result.Preparatory != nil {
-			fmt.Fprintln(w, "### Промпт для генерации промпта")
-			fmt.Fprintln(w)
-			fmt.Fprintln(w, result.Preparatory.Prompt)
-			fmt.Fprintln(w)
-			fmt.Fprintln(w, "### Сгенерированный промпт")
-			fmt.Fprintln(w)
-			fmt.Fprintln(w, result.Preparatory.Answer)
-			printUsage(w, result.Preparatory.Usage)
-			fmt.Fprintln(w)
-		}
-
-		fmt.Fprintln(w, "### Использованный промпт")
-		fmt.Fprintln(w)
-		fmt.Fprintln(w, result.Prompt)
-		fmt.Fprintln(w)
-		fmt.Fprintln(w, "### Ответ")
+		fmt.Fprintf(w, "## temperature = %s\n\n", formatTemperature(result.Temperature))
+		fmt.Fprintln(w, "### Пример ответа")
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, result.Answer)
 		printUsage(w, result.Usage)
 		fmt.Fprintln(w)
 	}
+
+	printConclusions(w)
 }
 
 func printUsage(w io.Writer, usage *tokenUsage) {
@@ -406,7 +310,7 @@ func writeReport(path string, content []byte) error {
 }
 
 func defaultReportPath(taskName string) string {
-	return filepath.Join("day-3", "answer_"+taskName+".md")
+	return filepath.Join("day-4", "answer_"+taskName+".md")
 }
 
 func sanitizeTaskName(name string) string {
@@ -446,11 +350,6 @@ func openFile(path string) error {
 	return cmd.Start()
 }
 
-func (cfg config) withPrompt(prompt string) config {
-	cfg.Prompt = strings.TrimSpace(prompt)
-	return cfg
-}
-
 func formatAPIError(body []byte) string {
 	var decoded apiError
 	if err := json.Unmarshal(body, &decoded); err == nil && decoded.Error != nil {
@@ -465,6 +364,29 @@ func formatAPIError(body []byte) string {
 		return "empty response body"
 	}
 	return text
+}
+
+func formatTemperatures(temperatures []float64) string {
+	parts := make([]string, 0, len(temperatures))
+	for _, temperature := range temperatures {
+		parts = append(parts, formatTemperature(temperature))
+	}
+	return strings.Join(parts, ", ")
+}
+
+func formatTemperature(temperature float64) string {
+	if temperature == float64(int(temperature)) {
+		return fmt.Sprintf("%.0f", temperature)
+	}
+	return fmt.Sprintf("%.1f", temperature)
+}
+
+func printConclusions(w io.Writer) {
+	fmt.Fprintln(w, "## Выводы")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "- `temperature = 0` лучше использовать для задач, где важны стабильность, точность и повторяемость: алгоритмы, факты, инструкции, проверяемый код.")
+	fmt.Fprintln(w, "- `temperature = 0.7` подходит для большинства рабочих задач: ответ остается достаточно управляемым, но становится живее и может предлагать разные формулировки.")
+	fmt.Fprintln(w, "- `temperature = 1.2` полезна для креативных идей, вариантов текста и мозгового штурма, но ее ответы нужно внимательнее проверять: выше шанс лишних допущений и отклонений от задачи.")
 }
 
 func envOrDefault(key, fallback string) string {
