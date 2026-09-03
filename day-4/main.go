@@ -22,7 +22,7 @@ const (
 	defaultBaseURL   = "https://api.deepseek.com"
 	defaultModel     = "deepseek-v4-flash"
 	defaultTimeout   = 90 * time.Second
-	defaultMaxTokens = 2048
+	defaultMaxTokens = 0
 	defaultTaskName  = "temperature_experiment"
 )
 
@@ -135,7 +135,7 @@ func readConfig(args []string, stdin io.Reader) (config, error) {
 	flags.StringVar(&cfg.BaseURL, "base-url", envOrDefault("DEEPSEEK_BASE_URL", defaultBaseURL), "DeepSeek API base URL")
 	flags.StringVar(&cfg.System, "system", "", "optional system message")
 	flags.DurationVar(&cfg.Timeout, "timeout", defaultTimeout, "request timeout")
-	flags.IntVar(&cfg.MaxTokens, "max-tokens", defaultMaxTokens, "maximum response tokens per API call")
+	flags.IntVar(&cfg.MaxTokens, "max-tokens", defaultMaxTokens, "maximum response tokens per API call; 0 means API default")
 	flags.BoolVar(&cfg.Thinking, "thinking", false, "enable DeepSeek thinking mode when supported")
 	flags.StringVar(&cfg.TaskName, "task-name", defaultTaskName, "task name for the default answer_<task_name>.md report")
 	flags.StringVar(&cfg.OutputPath, "out", "", "path to save Markdown report")
@@ -272,7 +272,11 @@ func printReport(w io.Writer, cfg config, results []experimentResult) {
 	fmt.Fprintln(w)
 	fmt.Fprintf(w, "- model: `%s`\n", cfg.Model)
 	fmt.Fprintf(w, "- temperatures: `%s`\n", formatTemperatures(experimentTemperatures))
-	fmt.Fprintf(w, "- max_tokens: `%d`\n", cfg.MaxTokens)
+	if cfg.MaxTokens == 0 {
+		fmt.Fprintln(w, "- max_tokens: API default")
+	} else {
+		fmt.Fprintf(w, "- max_tokens: `%d`\n", cfg.MaxTokens)
+	}
 	fmt.Fprintf(w, "- task_name: `%s`\n", cfg.TaskName)
 	fmt.Fprintln(w)
 
