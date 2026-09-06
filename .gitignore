@@ -8,6 +8,7 @@ codex/
 bin/
 *.test
 coverage.out
+.gocache/
 
 # macOS metadata
 .DS_Store
