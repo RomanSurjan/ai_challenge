@@ -20,7 +20,7 @@ import (
 
 const (
 	defaultTimeout     = 180 * time.Second
-	defaultMaxTokens   = 4096
+	defaultMaxTokens   = 16384
 	defaultTemperature = 0.2
 	defaultTaskName    = "model_comparison"
 )
@@ -280,7 +280,6 @@ func requestCompletion(ctx context.Context, client *http.Client, cfg config, spe
 	if isGroqGPTOSS(spec) {
 		includeReasoning := false
 		reqBody.IncludeReasoning = &includeReasoning
-		reqBody.ReasoningEffort = "low"
 		reqBody.MaxCompletionTokens = cfg.MaxTokens
 		reqBody.MaxTokens = 0
 	}
