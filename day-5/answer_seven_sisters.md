@@ -33,33 +33,31 @@
 
 | Провайдер | Модель | Время | Input | Output | Total | Tokens/sec | Цена input/output за 1M | Стоимость |
 |---|---|---:|---:|---:|---:|---:|---|---:|
-| Groq | `openai/gpt-oss-20b` | 13.40 s | 202 | 11698 | 11900 | 873.0 | $0.075 miss / $0.300 out (standard) | $0.00352455 |
-| DeepSeek | `deepseek-v4-flash` | 656 ms | 149 | 18 | 167 | 27.4 | $0.007 hit, $0.220 miss / $0.660 out (off-peak) | $0.00001740 |
-| DeepSeek | `deepseek-v4-pro` | 349 ms | 149 | 18 | 167 | 51.5 | $0.022 hit, $0.660 miss / $1.980 out (off-peak) | $0.00005232 |
+| Groq | `openai/gpt-oss-20b` | 9.25 s | 202 | 7659 | 7861 | 828.4 | $0.075 miss / $0.300 out (standard) | $0.00231285 |
+| DeepSeek | `deepseek-v4-flash` | 752 ms | 149 | 18 | 167 | 23.9 | $0.007 hit, $0.220 miss / $0.660 out (off-peak) | $0.00001740 |
+| DeepSeek | `deepseek-v4-pro` | 505 ms | 149 | 18 | 167 | 35.6 | $0.022 hit, $0.660 miss / $1.980 out (off-peak) | $0.00005232 |
 
 ## Ответ: GPT OSS 20B
 
-_Provider: Groq; model: `openai/gpt-oss-20b`; time=13.40 s; tokens: prompt=202, completion=11698, total=11900; estimated_cost=$0.00352455; finish_reason=stop_
+_Provider: Groq; model: `openai/gpt-oss-20b`; time=9.25 s; tokens: prompt=202, completion=7659, total=7861; estimated_cost=$0.00231285; finish_reason=stop_
 
-Седьмая сестра — **сестра**.  
-
-В задаче перечислены занятия, но в конце вопроса спрашивается, чем занимается «седьмая сестра», а не «седьмой человек». Поэтому ответом является слово «сестра» (то есть она сама является сестрой).
+Читает книгу (напр., читает саму задачу).
 
 ## Ответ: DeepSeek V4 Flash
 
-_Provider: DeepSeek; model: `deepseek-v4-flash`; time=656 ms; tokens: prompt=149, completion=18, total=167, cache_hit=128, cache_miss=21; estimated_cost=$0.00001740; finish_reason=stop_
+_Provider: DeepSeek; model: `deepseek-v4-flash`; time=752 ms; tokens: prompt=149, completion=18, total=167, cache_hit=128, cache_miss=21; estimated_cost=$0.00001740; finish_reason=stop_
 
 Седьмая сестра играет в шахматы с третьей сестрой.
 
 ## Ответ: DeepSeek V4 Pro
 
-_Provider: DeepSeek; model: `deepseek-v4-pro`; time=349 ms; tokens: prompt=149, completion=18, total=167, cache_hit=128, cache_miss=21; estimated_cost=$0.00005232; finish_reason=stop_
+_Provider: DeepSeek; model: `deepseek-v4-pro`; time=505 ms; tokens: prompt=149, completion=18, total=167, cache_hit=128, cache_miss=21; estimated_cost=$0.00005232; finish_reason=stop_
 
 Седьмая сестра играет в шахматы с третьей сестрой.
 
 ## Краткий вывод
 
-- Самая быстрая по wall-clock времени: `deepseek-v4-pro` (349 ms).
+- Самая быстрая по wall-clock времени: `deepseek-v4-pro` (505 ms).
 - Самая дешевая в этом запуске: `deepseek-v4-flash` ($0.00001740).
 - Меньше всего токенов потратила: `deepseek-v4-flash` (167 total tokens).
 - Корректность лучше оценивать по самим ответам: метрики скорости и цены не гарантируют правильность решения.
