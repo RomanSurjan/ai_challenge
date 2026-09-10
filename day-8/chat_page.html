@@ -1,0 +1,846 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 8 Token Chat</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --panel-soft: #f9fafc;
+      --text: #171b21;
+      --muted: #667085;
+      --line: #d9e0ea;
+      --line-strong: #c7d1df;
+      --accent: #246bfe;
+      --accent-dark: #1554d1;
+      --accent-soft: #eaf1ff;
+      --agent: #ffffff;
+      --user: #246bfe;
+      --code: #eef1f5;
+      --danger: #b42318;
+      --shadow: 0 18px 44px rgba(30, 41, 59, .08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      height: 100dvh;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 20px;
+      gap: 14px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 4px 2px 2px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 23px;
+      font-weight: 720;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 112px;
+      justify-content: flex-end;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: right;
+    }
+
+    .status::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #16a34a;
+      box-shadow: 0 0 0 4px rgba(22, 163, 74, .12);
+    }
+
+    .status.busy::before {
+      background: #f59e0b;
+      box-shadow: 0 0 0 4px rgba(245, 158, 11, .14);
+    }
+
+    .status.error::before {
+      background: var(--danger);
+      box-shadow: 0 0 0 4px rgba(180, 35, 24, .12);
+    }
+
+    main {
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .messages {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      height: 100%;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 20px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .92), rgba(249, 250, 252, .92)),
+        var(--panel-soft);
+    }
+
+    .message {
+      display: grid;
+      gap: 7px;
+      max-width: min(720px, 88%);
+    }
+
+    .message.user {
+      align-self: end;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: 0;
+    }
+
+    .user .label {
+      justify-self: end;
+    }
+
+    .bubble {
+      overflow-wrap: anywhere;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 13px 15px;
+      line-height: 1.55;
+      font-size: 15px;
+      box-shadow: 0 8px 24px rgba(30, 41, 59, .05);
+    }
+
+    .agent .bubble {
+      background: var(--agent);
+    }
+
+    .user .bubble {
+      background: var(--user);
+      border-color: var(--user);
+      color: #ffffff;
+      box-shadow: 0 10px 28px rgba(36, 107, 254, .2);
+    }
+
+    .error .bubble {
+      color: var(--danger);
+      background: #fff4f2;
+      border-color: #f1b8b2;
+    }
+
+    .metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 5px 7px;
+      white-space: nowrap;
+    }
+
+    .markdown > :first-child {
+      margin-top: 0;
+    }
+
+    .markdown > :last-child {
+      margin-bottom: 0;
+    }
+
+    .markdown p {
+      margin: 0 0 10px;
+      white-space: pre-wrap;
+    }
+
+    .markdown ul,
+    .markdown ol {
+      margin: 0 0 10px;
+      padding-left: 22px;
+    }
+
+    .markdown li + li {
+      margin-top: 4px;
+    }
+
+    .markdown code {
+      border-radius: 6px;
+      background: var(--code);
+      color: #101828;
+      padding: 2px 5px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: .92em;
+      overflow-wrap: anywhere;
+    }
+
+    .user .markdown code {
+      background: rgba(255, 255, 255, .18);
+      color: #ffffff;
+    }
+
+    .markdown pre {
+      max-width: 100%;
+      margin: 0 0 10px;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #111827;
+      padding: 12px;
+    }
+
+    .markdown pre code {
+      display: block;
+      min-width: max-content;
+      background: transparent;
+      color: #f9fafb;
+      padding: 0;
+      white-space: pre;
+      overflow-wrap: normal;
+    }
+
+    .markdown a {
+      color: var(--accent-dark);
+      font-weight: 650;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    .user .markdown a {
+      color: #ffffff;
+    }
+
+    .typing .bubble {
+      color: var(--muted);
+      background: #ffffff;
+    }
+
+    .typing-dots {
+      display: inline-flex;
+      gap: 4px;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+
+    .typing-dots span {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: .38;
+      animation: typingPulse 1.15s infinite ease-in-out;
+    }
+
+    .typing-dots span:nth-child(2) {
+      animation-delay: .15s;
+    }
+
+    .typing-dots span:nth-child(3) {
+      animation-delay: .3s;
+    }
+
+    @keyframes typingPulse {
+      0%, 80%, 100% {
+        transform: translateY(0);
+        opacity: .32;
+      }
+
+      40% {
+        transform: translateY(-2px);
+        opacity: .9;
+      }
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 10px 10px 10px 14px;
+      box-shadow: var(--shadow);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 48px;
+      max-height: 170px;
+      resize: none;
+      overflow-y: auto;
+      border: 0;
+      outline: none;
+      color: var(--text);
+      font: inherit;
+      line-height: 1.45;
+      background: transparent;
+    }
+
+    textarea::placeholder {
+      color: #98a2b3;
+    }
+
+    textarea:disabled {
+      cursor: default;
+      color: var(--muted);
+    }
+
+    button {
+      min-width: 112px;
+      min-height: 44px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #ffffff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .16s ease, opacity .16s ease, transform .16s ease;
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--accent-dark);
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .62;
+    }
+
+    .composer-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      padding: 0 2px 2px;
+    }
+
+    @media (max-width: 640px) {
+      .shell {
+        padding: 12px;
+        gap: 10px;
+      }
+
+      header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .status {
+        text-align: left;
+      }
+
+      .messages {
+        padding: 12px;
+      }
+
+      .message {
+        max-width: 100%;
+      }
+
+      form {
+        grid-template-columns: 1fr;
+        padding: 10px;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .composer-note {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <h1>Day 8 Token Chat</h1>
+        <div class="subtitle">Локальный агент DeepSeek с памятью, оценкой токенов и лимитом контекста</div>
+      </div>
+      <div class="status" id="status" aria-live="polite">Готов</div>
+    </header>
+    <main>
+      <div class="messages" id="messages">
+        <section class="message agent" id="empty-state">
+          <div class="label">Agent</div>
+          <div class="bubble markdown"><p>Привет. Задай вопрос, и я покажу ответ вместе с оценкой токенов.</p></div>
+        </section>
+      </div>
+    </main>
+    <form id="chat-form">
+      <div>
+        <textarea id="message-input" name="message" placeholder="Напишите сообщение" autocomplete="off" rows="1" required autofocus></textarea>
+        <div class="composer-note">Enter отправляет, Shift+Enter переносит строку</div>
+      </div>
+      <button type="submit" disabled>Отправить</button>
+    </form>
+  </div>
+
+  <script>
+    const form = document.querySelector('#chat-form');
+    const input = document.querySelector('#message-input');
+    const messages = document.querySelector('#messages');
+    const status = document.querySelector('#status');
+    const button = form.querySelector('button');
+    const TICK = String.fromCharCode(96);
+    const CODE_FENCE = TICK.repeat(3);
+    let isSending = false;
+
+    function addMessage(role, text, isError = false, tokenReport = null, usage = null) {
+      removeEmptyState();
+      const viewRole = role === 'assistant' ? 'agent' : role;
+      const item = document.createElement('section');
+      item.className = 'message ' + viewRole + (isError ? ' error' : '');
+
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = viewRole === 'user' ? 'Вы' : 'Agent';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble markdown';
+      bubble.append(renderMarkdown(text));
+
+      item.append(label, bubble);
+      if (tokenReport) {
+        item.append(createMetrics(tokenReport, usage));
+      }
+      messages.append(item);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function createMetrics(report, usage) {
+      const metrics = document.createElement('div');
+      metrics.className = 'metrics';
+      const source = usage ? {
+        input: usage.prompt_tokens,
+        output: usage.completion_tokens,
+        overall: usage.total_tokens,
+      } : hasCalibration(report) ? {
+        input: report.prompt_tokens,
+        output: report.answer_tokens,
+        overall: report.total_tokens,
+      } : {
+        input: report.raw_prompt_tokens || report.prompt_tokens,
+        output: report.raw_answer_tokens || report.answer_tokens,
+        overall: report.raw_total_tokens || report.total_tokens,
+      };
+      const values = [
+        ['Input', source.input],
+        ['Output', source.output],
+        ['Overall', source.overall],
+      ];
+      if (usage) {
+        metrics.dataset.source = 'api';
+      }
+      for (const [label, value] of values) {
+        const item = document.createElement('span');
+        item.className = 'metric';
+        item.textContent = label + ': ' + formatNumber(value || 0);
+        metrics.append(item);
+      }
+      return metrics;
+    }
+
+    function hasCalibration(report) {
+      const prompt = Number(report.prompt_multiplier || 1);
+      const completion = Number(report.completion_multiplier || 1);
+      return Math.abs(prompt - 1) > 0.000001 || Math.abs(completion - 1) > 0.000001;
+    }
+
+    function formatNumber(value) {
+      return Number(value || 0).toLocaleString('ru-RU');
+    }
+
+    function removeEmptyState() {
+      const emptyState = document.querySelector('#empty-state');
+      if (emptyState) {
+        emptyState.remove();
+      }
+    }
+
+    function addTypingMessage() {
+      removeEmptyState();
+      const item = document.createElement('section');
+      item.className = 'message agent typing';
+
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = 'Agent';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.append('Думаю');
+
+      const dots = document.createElement('span');
+      dots.className = 'typing-dots';
+      dots.setAttribute('aria-hidden', 'true');
+      dots.append(document.createElement('span'), document.createElement('span'), document.createElement('span'));
+      bubble.append(dots);
+
+      item.append(label, bubble);
+      messages.append(item);
+      messages.scrollTop = messages.scrollHeight;
+      return item;
+    }
+
+    function setStatus(text, state = '') {
+      status.textContent = text;
+      status.className = 'status' + (state ? ' ' + state : '');
+    }
+
+    function setSending(value) {
+      isSending = value;
+      updateButtonState();
+      if (value) {
+        setStatus('Агент отвечает', 'busy');
+      }
+    }
+
+    function updateButtonState() {
+      button.disabled = isSending || input.value.trim() === '';
+    }
+
+    function resizeInput() {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 170) + 'px';
+    }
+
+    function renderMarkdown(text) {
+      const root = document.createDocumentFragment();
+      const lines = String(text || '').replace(/\r\n?/g, '\n').split('\n');
+      let index = 0;
+
+      while (index < lines.length) {
+        const line = lines[index];
+        if (line.trim() === '') {
+          index++;
+          continue;
+        }
+
+        if (isFenceLine(line)) {
+          const codeLines = [];
+          index++;
+          while (index < lines.length && !isFenceLine(lines[index])) {
+            codeLines.push(lines[index]);
+            index++;
+          }
+          if (index < lines.length) {
+            index++;
+          }
+          root.append(createCodeBlock(codeLines.join('\n')));
+          continue;
+        }
+
+        const unordered = listMatch(line, false);
+        if (unordered) {
+          const list = document.createElement('ul');
+          while (index < lines.length) {
+            const match = listMatch(lines[index], false);
+            if (!match) {
+              break;
+            }
+            const item = document.createElement('li');
+            appendInline(item, match);
+            list.append(item);
+            index++;
+          }
+          root.append(list);
+          continue;
+        }
+
+        const ordered = listMatch(line, true);
+        if (ordered) {
+          const list = document.createElement('ol');
+          while (index < lines.length) {
+            const match = listMatch(lines[index], true);
+            if (!match) {
+              break;
+            }
+            const item = document.createElement('li');
+            appendInline(item, match);
+            list.append(item);
+            index++;
+          }
+          root.append(list);
+          continue;
+        }
+
+        const paragraph = [];
+        while (index < lines.length && lines[index].trim() !== '' && !isFenceLine(lines[index]) && !listMatch(lines[index], false) && !listMatch(lines[index], true)) {
+          paragraph.push(lines[index]);
+          index++;
+        }
+        const p = document.createElement('p');
+        appendInline(p, paragraph.join('\n'));
+        root.append(p);
+      }
+
+      if (!root.childNodes.length) {
+        root.append(document.createTextNode(''));
+      }
+      return root;
+    }
+
+    function isFenceLine(line) {
+      return line.trim().startsWith(CODE_FENCE);
+    }
+
+    function listMatch(line, ordered) {
+      const pattern = ordered ? /^\s*\d+[.)]\s+(.+)$/ : /^\s*[-*]\s+(.+)$/;
+      const match = line.match(pattern);
+      return match ? match[1] : null;
+    }
+
+    function createCodeBlock(code) {
+      const pre = document.createElement('pre');
+      const codeElement = document.createElement('code');
+      codeElement.textContent = code;
+      pre.append(codeElement);
+      return pre;
+    }
+
+    function appendInline(parent, source) {
+      let position = 0;
+      const value = String(source || '');
+
+      while (position < value.length) {
+        const token = nextInlineToken(value, position);
+        if (!token) {
+          parent.append(document.createTextNode(value.slice(position)));
+          break;
+        }
+        if (token.start > position) {
+          parent.append(document.createTextNode(value.slice(position, token.start)));
+        }
+
+        if (token.type === 'code') {
+          const code = document.createElement('code');
+          code.textContent = token.content;
+          parent.append(code);
+        } else if (token.type === 'strong') {
+          const strong = document.createElement('strong');
+          appendInline(strong, token.content);
+          parent.append(strong);
+        } else if (token.type === 'em') {
+          const em = document.createElement('em');
+          appendInline(em, token.content);
+          parent.append(em);
+        } else if (token.type === 'link') {
+          const href = safeHref(token.href);
+          if (href) {
+            const link = document.createElement('a');
+            link.href = href;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            appendInline(link, token.label);
+            parent.append(link);
+          } else {
+            parent.append(document.createTextNode(token.label + ' (' + token.href + ')'));
+          }
+        }
+
+        position = token.end;
+      }
+    }
+
+    function nextInlineToken(value, start) {
+      const candidates = [
+        findCodeToken(value, start),
+        findStrongToken(value, start),
+        findLinkToken(value, start),
+        findEmToken(value, start),
+      ].filter(Boolean);
+
+      candidates.sort((left, right) => left.start - right.start);
+      return candidates[0] || null;
+    }
+
+    function findCodeToken(value, start) {
+      const open = value.indexOf(TICK, start);
+      if (open === -1) {
+        return null;
+      }
+      const close = value.indexOf(TICK, open + 1);
+      if (close === -1) {
+        return null;
+      }
+      return {type: 'code', start: open, end: close + 1, content: value.slice(open + 1, close)};
+    }
+
+    function findStrongToken(value, start) {
+      const open = value.indexOf('**', start);
+      if (open === -1) {
+        return null;
+      }
+      const close = value.indexOf('**', open + 2);
+      if (close === -1 || close === open + 2) {
+        return null;
+      }
+      return {type: 'strong', start: open, end: close + 2, content: value.slice(open + 2, close)};
+    }
+
+    function findEmToken(value, start) {
+      let open = value.indexOf('*', start);
+      while (open !== -1 && (value[open - 1] === '*' || value[open + 1] === '*')) {
+        open = value.indexOf('*', open + 1);
+      }
+      if (open === -1) {
+        return null;
+      }
+      let close = value.indexOf('*', open + 1);
+      while (close !== -1 && (value[close - 1] === '*' || value[close + 1] === '*')) {
+        close = value.indexOf('*', close + 1);
+      }
+      if (close === -1 || close === open + 1) {
+        return null;
+      }
+      return {type: 'em', start: open, end: close + 1, content: value.slice(open + 1, close)};
+    }
+
+    function findLinkToken(value, start) {
+      const open = value.indexOf('[', start);
+      if (open === -1) {
+        return null;
+      }
+      const closeLabel = value.indexOf(']', open + 1);
+      if (closeLabel === -1 || value[closeLabel + 1] !== '(') {
+        return null;
+      }
+      const closeHref = value.indexOf(')', closeLabel + 2);
+      if (closeHref === -1) {
+        return null;
+      }
+      const label = value.slice(open + 1, closeLabel);
+      const href = value.slice(closeLabel + 2, closeHref).trim();
+      if (!label || !href) {
+        return null;
+      }
+      return {type: 'link', start: open, end: closeHref + 1, label, href};
+    }
+
+    function safeHref(href) {
+      try {
+        const url = new URL(href, window.location.origin);
+        if (url.protocol === 'http:' || url.protocol === 'https:' || url.protocol === 'mailto:') {
+          return url.href;
+        }
+      } catch (error) {
+        return null;
+      }
+      return null;
+    }
+
+    input.addEventListener('input', () => {
+      resizeInput();
+      updateButtonState();
+    });
+
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        if (!isSending && input.value.trim() !== '') {
+          form.requestSubmit();
+        }
+      }
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const text = input.value.trim();
+      if (!text || isSending) {
+        return;
+      }
+
+      addMessage('user', text);
+      input.value = '';
+      resizeInput();
+      input.focus();
+      setSending(true);
+      const typing = addTypingMessage();
+
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({message: text}),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          typing.remove();
+          addMessage('agent', data.error || 'Ошибка запроса', true, data.token_report || null, data.usage || null);
+          setStatus('Ошибка', 'error');
+          return;
+        }
+        typing.remove();
+        addMessage('agent', data.content || '', false, data.token_report || null, data.usage || null);
+        setStatus('Готов');
+      } catch (error) {
+        typing.remove();
+        addMessage('agent', error.message, true);
+        setStatus('Ошибка', 'error');
+      } finally {
+        setSending(false);
+        input.focus();
+      }
+    });
+
+    resizeInput();
+    updateButtonState();
+  </script>
+</body>
+</html>
