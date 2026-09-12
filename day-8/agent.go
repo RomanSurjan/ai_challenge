@@ -38,6 +38,7 @@ type AgentResponse struct {
 	Content      string
 	Usage        *tokenUsage
 	TokenReport  TokenReport
+	SessionUsage SessionUsage
 	FinishReason string
 }
 
@@ -60,11 +61,25 @@ type chatRequest struct {
 }
 
 type tokenUsage struct {
-	PromptTokens          int `json:"prompt_tokens"`
-	CompletionTokens      int `json:"completion_tokens"`
-	TotalTokens           int `json:"total_tokens"`
-	PromptCacheHitTokens  int `json:"prompt_cache_hit_tokens,omitempty"`
-	PromptCacheMissTokens int `json:"prompt_cache_miss_tokens,omitempty"`
+	PromptTokens            int                 `json:"prompt_tokens"`
+	CompletionTokens        int                 `json:"completion_tokens"`
+	TotalTokens             int                 `json:"total_tokens"`
+	ReasoningTokens         *int                `json:"reasoning_tokens,omitempty"`
+	ThinkingTokens          *int                `json:"thinking_tokens,omitempty"`
+	PromptCacheHitTokens    int                 `json:"prompt_cache_hit_tokens,omitempty"`
+	PromptCacheMissTokens   int                 `json:"prompt_cache_miss_tokens,omitempty"`
+	CompletionTokensDetails *tokenUsageDetails  `json:"completion_tokens_details,omitempty"`
+	CompletionTokensDetail  *tokenUsageDetails  `json:"completion_tokens_detail,omitempty"`
+	PromptTokensDetails     *promptUsageDetails `json:"prompt_tokens_details,omitempty"`
+}
+
+type tokenUsageDetails struct {
+	ReasoningTokens *int `json:"reasoning_tokens,omitempty"`
+	ThinkingTokens  *int `json:"thinking_tokens,omitempty"`
+}
+
+type promptUsageDetails struct {
+	CachedTokens int `json:"cached_tokens,omitempty"`
 }
 
 type chatResponse struct {
@@ -115,10 +130,11 @@ func (a *Agent) Ask(ctx context.Context, userPrompt string) (AgentResponse, erro
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	history, err := a.History(ctx)
+	state, err := a.loadState(ctx)
 	if err != nil {
 		return AgentResponse{}, err
 	}
+	history := state.Messages
 
 	tokenReport := EstimatePromptTokenReportWithCalibration(strings.TrimSpace(a.cfg.System), history, userPrompt, a.cfg.ContextLimit, a.cfg.Pricing, a.cfg.Calibration)
 	if tokenReport.OverflowTokens > 0 {
@@ -143,7 +159,9 @@ func (a *Agent) Ask(ctx context.Context, userPrompt string) (AgentResponse, erro
 		chatMessage{Role: "user", Content: userPrompt},
 		chatMessage{Role: "assistant", Content: answer},
 	)
-	if err := a.saveHistory(ctx, updatedHistory); err != nil {
+	state.Messages = updatedHistory
+	state.SessionUsage = AddTurnToSessionUsage(state.SessionUsage, decoded.Usage, tokenReport)
+	if err := a.saveState(ctx, state); err != nil {
 		return AgentResponse{}, err
 	}
 
@@ -151,26 +169,54 @@ func (a *Agent) Ask(ctx context.Context, userPrompt string) (AgentResponse, erro
 		Content:      answer,
 		Usage:        decoded.Usage,
 		TokenReport:  tokenReport,
+		SessionUsage: state.SessionUsage,
 		FinishReason: decoded.Choices[0].FinishReason,
 	}, nil
 }
 
 func (a *Agent) History(ctx context.Context) ([]chatMessage, error) {
-	if a.cfg.Memory == nil {
-		return nil, nil
-	}
-	messages, err := a.cfg.Memory.Load(ctx)
+	state, err := a.loadState(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return cloneMessages(messages), nil
+	return cloneMessages(state.Messages), nil
+}
+
+func (a *Agent) loadState(ctx context.Context) (ConversationState, error) {
+	if a.cfg.Memory == nil {
+		return ConversationState{}, nil
+	}
+	if store, ok := a.cfg.Memory.(StateStore); ok {
+		state, err := store.LoadState(ctx)
+		if err != nil {
+			return ConversationState{}, err
+		}
+		state.Messages = cloneMessages(state.Messages)
+		return state, nil
+	}
+	messages, err := a.cfg.Memory.Load(ctx)
+	if err != nil {
+		return ConversationState{}, err
+	}
+	return ConversationState{Messages: cloneMessages(messages)}, nil
 }
 
 func (a *Agent) saveHistory(ctx context.Context, messages []chatMessage) error {
+	return a.saveState(ctx, ConversationState{Messages: messages})
+}
+
+func (a *Agent) saveState(ctx context.Context, state ConversationState) error {
 	if a.cfg.Memory == nil {
 		return nil
 	}
-	if err := a.cfg.Memory.Save(ctx, messages); err != nil {
+	state.Messages = cloneMessages(state.Messages)
+	if store, ok := a.cfg.Memory.(StateStore); ok {
+		if err := store.SaveState(ctx, state); err != nil {
+			return fmt.Errorf("не удалось сохранить историю: %w", err)
+		}
+		return nil
+	}
+	if err := a.cfg.Memory.Save(ctx, state.Messages); err != nil {
 		return fmt.Errorf("не удалось сохранить историю: %w", err)
 	}
 	return nil

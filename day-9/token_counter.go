@@ -21,20 +21,6 @@ type TokenCalibration struct {
 	CompletionMultiplier float64 `json:"completion_multiplier"`
 }
 
-type UsageBucket struct {
-	PromptTokens         int  `json:"prompt_tokens"`
-	CompletionTokens     int  `json:"completion_tokens"`
-	ReasoningTokens      int  `json:"reasoning_tokens,omitempty"`
-	TotalTokens          int  `json:"total_tokens"`
-	SuccessfulTurns      int  `json:"successful_turns"`
-	ReasoningTokensKnown bool `json:"reasoning_tokens_known,omitempty"`
-}
-
-type SessionUsage struct {
-	API      UsageBucket `json:"api"`
-	Estimate UsageBucket `json:"estimate"`
-}
-
 type TokenReport struct {
 	RawCurrentRequestTokens int     `json:"raw_current_request_tokens"`
 	RawHistoryTokens        int     `json:"raw_history_tokens"`
@@ -61,82 +47,9 @@ type TokenReport struct {
 	TotalCostUSD            float64 `json:"total_cost_usd"`
 }
 
-func AddTurnToSessionUsage(session SessionUsage, usage *tokenUsage, report TokenReport) SessionUsage {
-	if usage != nil {
-		session.API = addUsageBucketTurn(session.API, UsageBucket{
-			PromptTokens:         usage.PromptTokens,
-			CompletionTokens:     usage.CompletionTokens,
-			ReasoningTokens:      usage.ReasoningTokenCount(),
-			TotalTokens:          usage.TotalTokenCount(),
-			ReasoningTokensKnown: usage.HasReasoningTokens(),
-		})
-		return session
-	}
-
-	session.Estimate = addUsageBucketTurn(session.Estimate, UsageBucket{
-		PromptTokens:     report.PromptTokens,
-		CompletionTokens: report.AnswerTokens,
-		TotalTokens:      report.TotalTokens,
-	})
-	return session
-}
-
-func addUsageBucketTurn(total UsageBucket, turn UsageBucket) UsageBucket {
-	total.PromptTokens += turn.PromptTokens
-	total.CompletionTokens += turn.CompletionTokens
-	total.TotalTokens += turn.TotalTokens
-	total.SuccessfulTurns++
-	if turn.ReasoningTokensKnown {
-		total.ReasoningTokens += turn.ReasoningTokens
-		total.ReasoningTokensKnown = true
-	}
-	return total
-}
-
-func (u *tokenUsage) ReasoningTokenCount() int {
-	if u == nil {
-		return 0
-	}
-	switch {
-	case u.ReasoningTokens != nil:
-		return *u.ReasoningTokens
-	case u.ThinkingTokens != nil:
-		return *u.ThinkingTokens
-	case u.CompletionTokensDetails != nil && u.CompletionTokensDetails.ReasoningTokens != nil:
-		return *u.CompletionTokensDetails.ReasoningTokens
-	case u.CompletionTokensDetails != nil && u.CompletionTokensDetails.ThinkingTokens != nil:
-		return *u.CompletionTokensDetails.ThinkingTokens
-	case u.CompletionTokensDetail != nil && u.CompletionTokensDetail.ReasoningTokens != nil:
-		return *u.CompletionTokensDetail.ReasoningTokens
-	case u.CompletionTokensDetail != nil && u.CompletionTokensDetail.ThinkingTokens != nil:
-		return *u.CompletionTokensDetail.ThinkingTokens
-	default:
-		return 0
-	}
-}
-
-func (u *tokenUsage) HasReasoningTokens() bool {
-	if u == nil {
-		return false
-	}
-	return u.ReasoningTokens != nil ||
-		u.ThinkingTokens != nil ||
-		u.CompletionTokensDetails != nil && (u.CompletionTokensDetails.ReasoningTokens != nil || u.CompletionTokensDetails.ThinkingTokens != nil) ||
-		u.CompletionTokensDetail != nil && (u.CompletionTokensDetail.ReasoningTokens != nil || u.CompletionTokensDetail.ThinkingTokens != nil)
-}
-
-func (u *tokenUsage) TotalTokenCount() int {
-	if u == nil {
-		return 0
-	}
-	if u.TotalTokens > 0 {
-		return u.TotalTokens
-	}
-	return u.PromptTokens + u.CompletionTokens
-}
-
 type ContextLimitError struct {
-	Report TokenReport
+	Report            TokenReport
+	CompressionReport *CompressionReport
 }
 
 func (e *ContextLimitError) Error() string {

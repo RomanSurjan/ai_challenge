@@ -17,6 +17,7 @@ type chatAPIResponse struct {
 	Content      string       `json:"content,omitempty"`
 	Usage        *tokenUsage  `json:"usage,omitempty"`
 	TokenReport  *TokenReport `json:"token_report,omitempty"`
+	SessionUsage SessionUsage `json:"session_usage,omitempty"`
 	FinishReason string       `json:"finish_reason,omitempty"`
 	Error        string       `json:"error,omitempty"`
 }
@@ -119,6 +120,7 @@ func chatAPIHandler(agent *Agent) http.HandlerFunc {
 			Content:      answer.Content,
 			Usage:        answer.Usage,
 			TokenReport:  &answer.TokenReport,
+			SessionUsage: answer.SessionUsage,
 			FinishReason: answer.FinishReason,
 		})
 	}

@@ -1,0 +1,1513 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 9 Context Compression Chat</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --panel-soft: #f9fafc;
+      --text: #171b21;
+      --muted: #667085;
+      --line: #d9e0ea;
+      --line-strong: #c7d1df;
+      --accent: #246bfe;
+      --accent-dark: #1554d1;
+      --accent-soft: #eaf1ff;
+      --agent: #ffffff;
+      --user: #246bfe;
+      --code: #eef1f5;
+      --danger: #b42318;
+      --shadow: 0 18px 44px rgba(30, 41, 59, .08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
+      height: 100dvh;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 20px;
+      gap: 14px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 4px 2px 2px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 23px;
+      font-weight: 720;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .compression-chip,
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: right;
+    }
+
+    .compression-chip {
+      min-height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 6px 9px;
+      white-space: nowrap;
+    }
+
+    .status::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #16a34a;
+      box-shadow: 0 0 0 4px rgba(22, 163, 74, .12);
+    }
+
+    .status.busy::before {
+      background: #f59e0b;
+      box-shadow: 0 0 0 4px rgba(245, 158, 11, .14);
+    }
+
+    .status.error::before {
+      background: var(--danger);
+      box-shadow: 0 0 0 4px rgba(180, 35, 24, .12);
+    }
+
+    main {
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .messages {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      height: 100%;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 20px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .92), rgba(249, 250, 252, .92)),
+        var(--panel-soft);
+    }
+
+    .message {
+      display: grid;
+      gap: 7px;
+      max-width: min(720px, 88%);
+    }
+
+    .message.user {
+      align-self: end;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: 0;
+    }
+
+    .user .label {
+      justify-self: end;
+    }
+
+    .bubble {
+      overflow-wrap: anywhere;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 13px 15px;
+      line-height: 1.55;
+      font-size: 15px;
+      box-shadow: 0 8px 24px rgba(30, 41, 59, .05);
+    }
+
+    .agent .bubble {
+      background: var(--agent);
+    }
+
+    .user .bubble {
+      background: var(--user);
+      border-color: var(--user);
+      color: #ffffff;
+      box-shadow: 0 10px 28px rgba(36, 107, 254, .2);
+    }
+
+    .error .bubble {
+      color: var(--danger);
+      background: #fff4f2;
+      border-color: #f1b8b2;
+    }
+
+    .progress-status {
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border: 1px solid #cbdafa;
+      border-radius: 8px;
+      background: #f6f9ff;
+      color: #31547f;
+      padding: 8px 11px;
+      font-size: 13px;
+      line-height: 1.35;
+      box-shadow: 0 8px 24px rgba(30, 41, 59, .05);
+    }
+
+    .progress-status[hidden] {
+      display: none;
+    }
+
+    .progress-main {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 750;
+    }
+
+    .progress-main::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(36, 107, 254, .13);
+      animation: statusPulse 1s infinite ease-in-out;
+    }
+
+    .progress-kicker {
+      flex: 0 0 auto;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .progress-title {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .progress-detail {
+      color: var(--muted);
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+
+    @keyframes statusPulse {
+      0%, 100% {
+        transform: scale(.9);
+        opacity: .65;
+      }
+
+      50% {
+        transform: scale(1.12);
+        opacity: 1;
+      }
+    }
+
+    .metrics {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 5px 7px;
+      white-space: nowrap;
+    }
+
+    .context-toggle,
+    .secondary-button,
+    .danger-button {
+      min-width: 0;
+      min-height: 38px;
+      border: 1px solid var(--line-strong);
+      background: #ffffff;
+      color: var(--text);
+      padding: 0 12px;
+      font-weight: 700;
+    }
+
+    .context-toggle {
+      width: 38px;
+      padding: 0;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .secondary-button:hover:not(:disabled),
+    .danger-button:hover:not(:disabled),
+    .context-toggle:hover:not(:disabled) {
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      transform: translateY(-1px);
+    }
+
+    .danger-button {
+      border-color: #f1b8b2;
+      color: var(--danger);
+    }
+
+    .panel-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      background: rgba(15, 23, 42, .22);
+    }
+
+    .panel-overlay.open {
+      display: block;
+    }
+
+    .context-panel {
+      position: fixed;
+      z-index: 30;
+      top: 0;
+      right: 0;
+      width: min(460px, 100vw);
+      height: 100dvh;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      background: var(--panel);
+      border-left: 1px solid var(--line);
+      box-shadow: -20px 0 48px rgba(15, 23, 42, .16);
+      transform: translateX(100%);
+      transition: transform .18s ease;
+    }
+
+    .context-panel.open {
+      transform: translateX(0);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .panel-body {
+      min-height: 0;
+      overflow: auto;
+      padding: 16px 18px 20px;
+    }
+
+    .panel-section {
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-section:first-child {
+      padding-top: 0;
+    }
+
+    .panel-section:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .panel-title {
+      margin: 0 0 12px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .settings-form {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 11px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      padding: 0;
+      box-shadow: none;
+    }
+
+    .field,
+    .checkbox-field {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .checkbox-field {
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      color: var(--text);
+    }
+
+    .field input[type="number"] {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      padding: 7px 9px;
+      color: var(--text);
+      font: inherit;
+      background: #ffffff;
+    }
+
+    .settings-actions,
+    .reset-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .form-error {
+      min-height: 18px;
+      color: var(--danger);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .report-grid {
+      display: grid;
+      grid-template-columns: minmax(150px, 1fr) minmax(90px, auto);
+      gap: 8px 12px;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .report-grid dt {
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+    .report-grid dd {
+      margin: 0;
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+
+    .markdown > :first-child {
+      margin-top: 0;
+    }
+
+    .markdown > :last-child {
+      margin-bottom: 0;
+    }
+
+    .markdown p {
+      margin: 0 0 10px;
+      white-space: pre-wrap;
+    }
+
+    .markdown ul,
+    .markdown ol {
+      margin: 0 0 10px;
+      padding-left: 22px;
+    }
+
+    .markdown li + li {
+      margin-top: 4px;
+    }
+
+    .markdown code {
+      border-radius: 6px;
+      background: var(--code);
+      color: #101828;
+      padding: 2px 5px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: .92em;
+      overflow-wrap: anywhere;
+    }
+
+    .user .markdown code {
+      background: rgba(255, 255, 255, .18);
+      color: #ffffff;
+    }
+
+    .markdown pre {
+      max-width: 100%;
+      margin: 0 0 10px;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #111827;
+      padding: 12px;
+    }
+
+    .markdown pre code {
+      display: block;
+      min-width: max-content;
+      background: transparent;
+      color: #f9fafb;
+      padding: 0;
+      white-space: pre;
+      overflow-wrap: normal;
+    }
+
+    .markdown a {
+      color: var(--accent-dark);
+      font-weight: 650;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    .user .markdown a {
+      color: #ffffff;
+    }
+
+    .typing .bubble {
+      color: var(--muted);
+      background: #ffffff;
+    }
+
+    .typing-dots {
+      display: inline-flex;
+      gap: 4px;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+
+    .typing-dots span {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: .38;
+      animation: typingPulse 1.15s infinite ease-in-out;
+    }
+
+    .typing-dots span:nth-child(2) {
+      animation-delay: .15s;
+    }
+
+    .typing-dots span:nth-child(3) {
+      animation-delay: .3s;
+    }
+
+    @keyframes typingPulse {
+      0%, 80%, 100% {
+        transform: translateY(0);
+        opacity: .32;
+      }
+
+      40% {
+        transform: translateY(-2px);
+        opacity: .9;
+      }
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 10px 10px 10px 14px;
+      box-shadow: var(--shadow);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 48px;
+      max-height: 170px;
+      resize: none;
+      overflow-y: auto;
+      border: 0;
+      outline: none;
+      color: var(--text);
+      font: inherit;
+      line-height: 1.45;
+      background: transparent;
+    }
+
+    textarea::placeholder {
+      color: #98a2b3;
+    }
+
+    textarea:disabled {
+      cursor: default;
+      color: var(--muted);
+    }
+
+    button {
+      min-width: 112px;
+      min-height: 44px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #ffffff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .16s ease, opacity .16s ease, transform .16s ease;
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--accent-dark);
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .62;
+    }
+
+    .composer-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      padding: 0 2px 2px;
+    }
+
+    @media (max-width: 640px) {
+      .shell {
+        padding: 12px;
+        gap: 10px;
+      }
+
+      header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .header-actions {
+        justify-content: flex-start;
+      }
+
+      .compression-chip,
+      .status {
+        text-align: left;
+      }
+
+      .messages {
+        padding: 12px;
+      }
+
+      .message {
+        max-width: 100%;
+      }
+
+      .progress-status {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .progress-detail {
+        text-align: left;
+      }
+
+      form {
+        grid-template-columns: 1fr;
+        padding: 10px;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .composer-note {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <h1>Day 9 Context Chat</h1>
+        <div class="subtitle">Локальный агент DeepSeek с памятью, summary и оценкой экономии контекста</div>
+      </div>
+      <div class="header-actions">
+        <div class="compression-chip" id="compression-chip">Compression: loading</div>
+        <button class="context-toggle" id="context-toggle" type="button" aria-label="Открыть Context / Compression" title="Context / Compression">⚙</button>
+        <div class="status" id="status" aria-live="polite">Готов</div>
+      </div>
+    </header>
+    <main>
+      <div class="messages" id="messages">
+        <section class="message agent" id="empty-state">
+          <div class="label">Agent</div>
+          <div class="bubble markdown"><p>Привет. Задай вопрос, и я покажу ответ вместе с оценкой токенов и компрессии истории.</p></div>
+        </section>
+      </div>
+    </main>
+    <div class="panel-overlay" id="panel-overlay" hidden></div>
+    <aside class="context-panel" id="context-panel" aria-hidden="true" aria-labelledby="context-panel-title">
+      <div class="panel-header">
+        <div>
+          <h2 id="context-panel-title">Context / Compression</h2>
+          <div class="subtitle">История хранится полностью, summary влияет только на следующий prompt.</div>
+        </div>
+        <button class="context-toggle" id="context-close" type="button" aria-label="Закрыть панель" title="Закрыть">×</button>
+      </div>
+      <div class="panel-body">
+        <section class="panel-section">
+          <h3 class="panel-title">Settings</h3>
+          <form class="settings-form" id="settings-form">
+            <label class="checkbox-field">
+              <input type="checkbox" id="compression-enabled">
+              <span>Compression enabled</span>
+            </label>
+            <label class="field">
+              <span>Keep last messages</span>
+              <input type="number" id="keep-last-messages" min="1" step="1" required>
+            </label>
+            <label class="field">
+              <span>Summary chunk size</span>
+              <input type="number" id="summary-chunk-size" min="1" step="1" required>
+            </label>
+            <label class="field">
+              <span>Context limit</span>
+              <input type="number" id="context-limit" min="0" step="1" required>
+            </label>
+            <div class="settings-actions">
+              <button type="submit">Save settings</button>
+              <button class="secondary-button" id="refresh-report" type="button">Refresh report</button>
+            </div>
+            <div class="form-error" id="settings-error" aria-live="polite"></div>
+          </form>
+        </section>
+        <section class="panel-section">
+          <h3 class="panel-title">Report</h3>
+          <dl class="report-grid" id="compression-report-grid"></dl>
+        </section>
+        <section class="panel-section">
+          <h3 class="panel-title">Reset</h3>
+          <div class="reset-actions">
+            <button class="danger-button" id="reset-history" type="button">Reset history</button>
+            <button class="danger-button" id="reset-summary" type="button">Reset summary</button>
+          </div>
+        </section>
+      </div>
+    </aside>
+    <div class="progress-status" id="progress-status" role="status" aria-live="polite" hidden>
+      <div class="progress-main">
+        <span class="progress-kicker">Context</span>
+        <span class="progress-title" id="progress-title">Checking context</span>
+      </div>
+      <div class="progress-detail" id="progress-detail">Preparing context</div>
+    </div>
+    <form id="chat-form">
+      <div>
+        <textarea id="message-input" name="message" placeholder="Напишите сообщение" autocomplete="off" rows="1" required autofocus></textarea>
+        <div class="composer-note">Enter отправляет, Shift+Enter переносит строку</div>
+      </div>
+      <button type="submit" disabled>Отправить</button>
+    </form>
+  </div>
+
+  <script>
+    const form = document.querySelector('#chat-form');
+    const input = document.querySelector('#message-input');
+    const messages = document.querySelector('#messages');
+    const status = document.querySelector('#status');
+    const progressStatus = document.querySelector('#progress-status');
+    const progressTitle = document.querySelector('#progress-title');
+    const progressDetail = document.querySelector('#progress-detail');
+    const button = form.querySelector('button');
+    const compressionChip = document.querySelector('#compression-chip');
+    const contextToggle = document.querySelector('#context-toggle');
+    const contextClose = document.querySelector('#context-close');
+    const panel = document.querySelector('#context-panel');
+    const panelOverlay = document.querySelector('#panel-overlay');
+    const settingsForm = document.querySelector('#settings-form');
+    const settingsError = document.querySelector('#settings-error');
+    const compressionEnabled = document.querySelector('#compression-enabled');
+    const keepLastMessages = document.querySelector('#keep-last-messages');
+    const summaryChunkSize = document.querySelector('#summary-chunk-size');
+    const contextLimit = document.querySelector('#context-limit');
+    const reportGrid = document.querySelector('#compression-report-grid');
+    const refreshReport = document.querySelector('#refresh-report');
+    const resetHistory = document.querySelector('#reset-history');
+    const resetSummary = document.querySelector('#reset-summary');
+    const TICK = String.fromCharCode(96);
+    const CODE_FENCE = TICK.repeat(3);
+    let isSending = false;
+
+    function addMessage(role, text, isError = false, tokenReport = null, usage = null, compressionReport = null) {
+      removeEmptyState();
+      const viewRole = role === 'assistant' ? 'agent' : role;
+      const item = document.createElement('section');
+      item.className = 'message ' + viewRole + (isError ? ' error' : '');
+
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = viewRole === 'user' ? 'Вы' : 'Agent';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble markdown';
+      bubble.append(renderMarkdown(text));
+
+      item.append(label, bubble);
+      if (tokenReport) {
+        item.append(createMetrics(tokenReport, usage, compressionReport));
+      }
+      messages.append(item);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function createMetrics(report, usage, compressionReport) {
+      const metrics = document.createElement('div');
+      metrics.className = 'metrics';
+      const source = usage ? {
+        input: usage.prompt_tokens,
+        output: usage.completion_tokens,
+        overall: usage.total_tokens,
+      } : hasCalibration(report) ? {
+        input: report.prompt_tokens,
+        output: report.answer_tokens,
+        overall: report.total_tokens,
+      } : {
+        input: report.raw_prompt_tokens || report.prompt_tokens,
+        output: report.raw_answer_tokens || report.answer_tokens,
+        overall: report.raw_total_tokens || report.total_tokens,
+      };
+      const values = [
+        ['Input', source.input],
+        ['Output', source.output],
+      ];
+      if (compressionReport) {
+        values.push(
+          ['Saved input', formatNumber(compressionReport.estimated_saved_input_tokens || compressionReport.saved_tokens || 0) + ' (' + Number(compressionReport.estimated_saved_percent || compressionReport.saved_percent || 0).toFixed(1) + '%)'],
+          ['Compression', compressionReport.mode || (compressionReport.enabled ? 'enabled' : 'disabled')],
+        );
+      }
+      if (usage) {
+        metrics.dataset.source = 'api';
+      }
+      metrics.textContent = values
+        .map(([label, value]) => label + ': ' + (typeof value === 'number' ? formatNumber(value || 0) : value))
+        .join(' · ');
+      return metrics;
+    }
+
+    function hasCalibration(report) {
+      const prompt = Number(report.prompt_multiplier || 1);
+      const completion = Number(report.completion_multiplier || 1);
+      return Math.abs(prompt - 1) > 0.000001 || Math.abs(completion - 1) > 0.000001;
+    }
+
+    function formatNumber(value) {
+      return Number(value || 0).toLocaleString('ru-RU');
+    }
+
+    function removeEmptyState() {
+      const emptyState = document.querySelector('#empty-state');
+      if (emptyState) {
+        emptyState.remove();
+      }
+    }
+
+    function addTypingMessage() {
+      removeEmptyState();
+      const item = document.createElement('section');
+      item.className = 'message agent typing';
+
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = 'Agent';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.append('Думаю');
+
+      const dots = document.createElement('span');
+      dots.className = 'typing-dots';
+      dots.setAttribute('aria-hidden', 'true');
+      dots.append(document.createElement('span'), document.createElement('span'), document.createElement('span'));
+      bubble.append(dots);
+
+      item.append(label, bubble);
+      messages.append(item);
+      messages.scrollTop = messages.scrollHeight;
+      return item;
+    }
+
+    const progressSteps = [
+      {key: 'checking', label: 'Checking context', detail: 'Preparing context'},
+      {key: 'summarizing', label: 'Summarizing old messages', detail: 'Updating compact memory'},
+      {key: 'updated', label: 'Summary updated', detail: 'Using refreshed summary'},
+      {key: 'answering', label: 'Agent is answering', detail: 'Waiting for model response'},
+    ];
+
+    function addProgressMessage(phase = 'checking') {
+      removeEmptyState();
+      updateProgressMessage(progressStatus, phase);
+      return progressStatus;
+    }
+
+    function updateProgressMessage(item, phase) {
+      if (!item) {
+        return;
+      }
+      const step = progressSteps.find((candidate) => candidate.key === phase) || progressSteps[0];
+      item.hidden = false;
+      item.dataset.phase = step.key;
+      progressTitle.textContent = step.label;
+      progressDetail.textContent = step.detail;
+    }
+
+    function removeProgressMessage(item) {
+      const target = item || progressStatus;
+      if (!target) {
+        return;
+      }
+      target.hidden = true;
+      target.dataset.phase = '';
+    }
+
+    function delay(ms) {
+      return new Promise((resolve) => window.setTimeout(resolve, ms));
+    }
+
+    async function holdPhase(startedAt, minimumMs) {
+      const remaining = minimumMs - (Date.now() - startedAt);
+      if (remaining > 0) {
+        await delay(remaining);
+      }
+    }
+
+    function setStatus(text, state = '') {
+      status.textContent = text;
+      status.className = 'status' + (state ? ' ' + state : '');
+    }
+
+    function setPanelOpen(open) {
+      panel.classList.toggle('open', open);
+      panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+      panelOverlay.classList.toggle('open', open);
+      panelOverlay.hidden = !open;
+      contextToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) {
+        refreshCompressionReport();
+      }
+    }
+
+    async function loadSettings() {
+      try {
+        const settings = await fetchJSON('/api/settings');
+        fillSettings(settings);
+      } catch (error) {
+        settingsError.textContent = error.message;
+      }
+    }
+
+    function fillSettings(settings) {
+      compressionEnabled.checked = Boolean(settings.compression_enabled);
+      keepLastMessages.value = settings.keep_last_messages ?? '';
+      summaryChunkSize.value = settings.summary_chunk_size ?? '';
+      contextLimit.value = settings.context_limit ?? '';
+    }
+
+    function readSettingsForm() {
+      return {
+        compression_enabled: compressionEnabled.checked,
+        keep_last_messages: Number(keepLastMessages.value),
+        summary_chunk_size: Number(summaryChunkSize.value),
+        context_limit: Number(contextLimit.value),
+      };
+    }
+
+    async function saveSettings() {
+      settingsError.textContent = '';
+      const settings = readSettingsForm();
+      try {
+        const saved = await fetchJSON('/api/settings', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(settings),
+        });
+        fillSettings(saved);
+        await refreshCompressionReport();
+      } catch (error) {
+        settingsError.textContent = error.message;
+      }
+    }
+
+    async function refreshCompressionReport() {
+      try {
+        const report = await fetchJSON('/api/compression-report');
+        renderCompressionReport(report);
+        return report;
+      } catch (error) {
+        compressionChip.textContent = 'Compression: report error';
+        reportGrid.replaceChildren(createReportRow('error', error.message));
+        throw error;
+      }
+    }
+
+    function renderCompressionReport(report) {
+      const mode = report.mode || (report.enabled ? 'enabled' : 'disabled');
+      compressionChip.textContent = compressionChipText(report);
+      const rows = [
+        ['mode', mode],
+        ['total history messages', report.total_history_messages],
+        ['summary covers', formatNumber(report.summary_covers_messages) + ' messages'],
+        ['recent messages kept', formatNumber(report.recent_messages_kept) + ' messages'],
+        ['old messages waiting for summary', formatNumber(report.pending_old_messages || report.pending_messages) + ' messages'],
+        ['summary update', report.summary_update_label || summaryUpdateLabel(report)],
+        ['summary update status', report.summary_update_status || ''],
+        ['summary updated now', yesNo(report.summary_updated_now)],
+        ['newly compressed', formatNumber(report.newly_compressed_messages) + ' messages'],
+        ['reason', report.reason || ''],
+        ['full prompt input', formatNumber(report.full_prompt_input_tokens || report.full_input_tokens) + ' tokens'],
+        ['actual prompt input', formatNumber(report.actual_prompt_input_tokens || report.compressed_input_tokens) + ' tokens'],
+        ['estimated saved input', formatNumber(report.estimated_saved_input_tokens || report.saved_tokens || 0) + ' tokens (' + Number(report.estimated_saved_percent || report.saved_percent || 0).toFixed(1) + '%)'],
+        ['saving status', report.saving_status || ''],
+        ['context-limit check', report.context_limit_status || ''],
+      ];
+      if ((report.messages_until_summary_update || 0) > 0) {
+        rows.splice(6, 0, ['messages until summary update', formatNumber(report.messages_until_summary_update) + ' messages']);
+      }
+      reportGrid.replaceChildren(...rows.map(([label, value]) => createReportRow(label, value)));
+    }
+
+    function compressionChipText(report) {
+      if (!report || !report.enabled) {
+        return 'Compression: off';
+      }
+      const saved = formatNumber(report.estimated_saved_input_tokens || report.saved_tokens || 0);
+      const status = report.summary_update_status || '';
+      if (status === 'summarizing') {
+        return 'Compression: on · summarizing';
+      }
+      if (status === 'updated') {
+        return 'Compression: on · summary updated';
+      }
+      if (status === 'ready') {
+        return 'Compression: on · saved ' + saved + ' tokens · summary ready';
+      }
+      if (status === 'waiting') {
+        return 'Compression: on · saved ' + saved + ' tokens · summary waiting ' + formatNumber(report.messages_until_summary_update || 0);
+      }
+      if (status === 'failed') {
+        return 'Compression: on · summary failed';
+      }
+      return 'Compression: on · saved ' + saved + ' tokens';
+    }
+
+    function summaryUpdateLabel(report) {
+      if (!report || !report.enabled) {
+        return 'Summary update disabled';
+      }
+      if (report.summary_updated_now) {
+        return 'Summary updated';
+      }
+      const pending = report.pending_old_messages || report.pending_messages || 0;
+      if (pending >= (report.chunk_size || 0)) {
+        return 'Ready to summarize now';
+      }
+      return 'Waiting for ' + formatNumber(report.messages_until_summary_update || 0) + ' more messages';
+    }
+
+    function createReportRow(label, value) {
+      const fragment = document.createDocumentFragment();
+      const term = document.createElement('dt');
+      term.textContent = label;
+      const detail = document.createElement('dd');
+      detail.textContent = String(value ?? '');
+      fragment.append(term, detail);
+      return fragment;
+    }
+
+    function yesNo(value) {
+      return value ? 'yes' : 'no';
+    }
+
+    async function fetchJSON(url, options = {}) {
+      const response = await fetch(url, options);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(data.error || 'Request failed');
+        error.data = data;
+        throw error;
+      }
+      return data;
+    }
+
+    async function resetEndpoint(url) {
+      settingsError.textContent = '';
+      try {
+        await fetchJSON(url, {method: 'POST'});
+        await refreshCompressionReport();
+      } catch (error) {
+        settingsError.textContent = error.message;
+      }
+    }
+
+    function restoreEmptyState() {
+      messages.replaceChildren();
+      const item = document.createElement('section');
+      item.className = 'message agent';
+      item.id = 'empty-state';
+
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = 'Agent';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble markdown';
+      const paragraph = document.createElement('p');
+      paragraph.textContent = 'История очищена. Задай новый вопрос, и report начнет считаться заново.';
+      bubble.append(paragraph);
+
+      item.append(label, bubble);
+      messages.append(item);
+    }
+
+    function setSending(value) {
+      isSending = value;
+      updateButtonState();
+      if (value) {
+        setStatus('Checking context', 'busy');
+      }
+    }
+
+    function updateButtonState() {
+      button.disabled = isSending || input.value.trim() === '';
+    }
+
+    function resizeInput() {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 170) + 'px';
+    }
+
+    function renderMarkdown(text) {
+      const root = document.createDocumentFragment();
+      const lines = String(text || '').replace(/\r\n?/g, '\n').split('\n');
+      let index = 0;
+
+      while (index < lines.length) {
+        const line = lines[index];
+        if (line.trim() === '') {
+          index++;
+          continue;
+        }
+
+        if (isFenceLine(line)) {
+          const codeLines = [];
+          index++;
+          while (index < lines.length && !isFenceLine(lines[index])) {
+            codeLines.push(lines[index]);
+            index++;
+          }
+          if (index < lines.length) {
+            index++;
+          }
+          root.append(createCodeBlock(codeLines.join('\n')));
+          continue;
+        }
+
+        const unordered = listMatch(line, false);
+        if (unordered) {
+          const list = document.createElement('ul');
+          while (index < lines.length) {
+            const match = listMatch(lines[index], false);
+            if (!match) {
+              break;
+            }
+            const item = document.createElement('li');
+            appendInline(item, match);
+            list.append(item);
+            index++;
+          }
+          root.append(list);
+          continue;
+        }
+
+        const ordered = listMatch(line, true);
+        if (ordered) {
+          const list = document.createElement('ol');
+          while (index < lines.length) {
+            const match = listMatch(lines[index], true);
+            if (!match) {
+              break;
+            }
+            const item = document.createElement('li');
+            appendInline(item, match);
+            list.append(item);
+            index++;
+          }
+          root.append(list);
+          continue;
+        }
+
+        const paragraph = [];
+        while (index < lines.length && lines[index].trim() !== '' && !isFenceLine(lines[index]) && !listMatch(lines[index], false) && !listMatch(lines[index], true)) {
+          paragraph.push(lines[index]);
+          index++;
+        }
+        const p = document.createElement('p');
+        appendInline(p, paragraph.join('\n'));
+        root.append(p);
+      }
+
+      if (!root.childNodes.length) {
+        root.append(document.createTextNode(''));
+      }
+      return root;
+    }
+
+    function isFenceLine(line) {
+      return line.trim().startsWith(CODE_FENCE);
+    }
+
+    function listMatch(line, ordered) {
+      const pattern = ordered ? /^\s*\d+[.)]\s+(.+)$/ : /^\s*[-*]\s+(.+)$/;
+      const match = line.match(pattern);
+      return match ? match[1] : null;
+    }
+
+    function createCodeBlock(code) {
+      const pre = document.createElement('pre');
+      const codeElement = document.createElement('code');
+      codeElement.textContent = code;
+      pre.append(codeElement);
+      return pre;
+    }
+
+    function appendInline(parent, source) {
+      let position = 0;
+      const value = String(source || '');
+
+      while (position < value.length) {
+        const token = nextInlineToken(value, position);
+        if (!token) {
+          parent.append(document.createTextNode(value.slice(position)));
+          break;
+        }
+        if (token.start > position) {
+          parent.append(document.createTextNode(value.slice(position, token.start)));
+        }
+
+        if (token.type === 'code') {
+          const code = document.createElement('code');
+          code.textContent = token.content;
+          parent.append(code);
+        } else if (token.type === 'strong') {
+          const strong = document.createElement('strong');
+          appendInline(strong, token.content);
+          parent.append(strong);
+        } else if (token.type === 'em') {
+          const em = document.createElement('em');
+          appendInline(em, token.content);
+          parent.append(em);
+        } else if (token.type === 'link') {
+          const href = safeHref(token.href);
+          if (href) {
+            const link = document.createElement('a');
+            link.href = href;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            appendInline(link, token.label);
+            parent.append(link);
+          } else {
+            parent.append(document.createTextNode(token.label + ' (' + token.href + ')'));
+          }
+        }
+
+        position = token.end;
+      }
+    }
+
+    function nextInlineToken(value, start) {
+      const candidates = [
+        findCodeToken(value, start),
+        findStrongToken(value, start),
+        findLinkToken(value, start),
+        findEmToken(value, start),
+      ].filter(Boolean);
+
+      candidates.sort((left, right) => left.start - right.start);
+      return candidates[0] || null;
+    }
+
+    function findCodeToken(value, start) {
+      const open = value.indexOf(TICK, start);
+      if (open === -1) {
+        return null;
+      }
+      const close = value.indexOf(TICK, open + 1);
+      if (close === -1) {
+        return null;
+      }
+      return {type: 'code', start: open, end: close + 1, content: value.slice(open + 1, close)};
+    }
+
+    function findStrongToken(value, start) {
+      const open = value.indexOf('**', start);
+      if (open === -1) {
+        return null;
+      }
+      const close = value.indexOf('**', open + 2);
+      if (close === -1 || close === open + 2) {
+        return null;
+      }
+      return {type: 'strong', start: open, end: close + 2, content: value.slice(open + 2, close)};
+    }
+
+    function findEmToken(value, start) {
+      let open = value.indexOf('*', start);
+      while (open !== -1 && (value[open - 1] === '*' || value[open + 1] === '*')) {
+        open = value.indexOf('*', open + 1);
+      }
+      if (open === -1) {
+        return null;
+      }
+      let close = value.indexOf('*', open + 1);
+      while (close !== -1 && (value[close - 1] === '*' || value[close + 1] === '*')) {
+        close = value.indexOf('*', close + 1);
+      }
+      if (close === -1 || close === open + 1) {
+        return null;
+      }
+      return {type: 'em', start: open, end: close + 1, content: value.slice(open + 1, close)};
+    }
+
+    function findLinkToken(value, start) {
+      const open = value.indexOf('[', start);
+      if (open === -1) {
+        return null;
+      }
+      const closeLabel = value.indexOf(']', open + 1);
+      if (closeLabel === -1 || value[closeLabel + 1] !== '(') {
+        return null;
+      }
+      const closeHref = value.indexOf(')', closeLabel + 2);
+      if (closeHref === -1) {
+        return null;
+      }
+      const label = value.slice(open + 1, closeLabel);
+      const href = value.slice(closeLabel + 2, closeHref).trim();
+      if (!label || !href) {
+        return null;
+      }
+      return {type: 'link', start: open, end: closeHref + 1, label, href};
+    }
+
+    function safeHref(href) {
+      try {
+        const url = new URL(href, window.location.origin);
+        if (url.protocol === 'http:' || url.protocol === 'https:' || url.protocol === 'mailto:') {
+          return url.href;
+        }
+      } catch (error) {
+        return null;
+      }
+      return null;
+    }
+
+    input.addEventListener('input', () => {
+      resizeInput();
+      updateButtonState();
+    });
+
+    contextToggle.addEventListener('click', () => {
+      setPanelOpen(true);
+    });
+
+    contextClose.addEventListener('click', () => {
+      setPanelOpen(false);
+    });
+
+    panelOverlay.addEventListener('click', () => {
+      setPanelOpen(false);
+    });
+
+    refreshReport.addEventListener('click', () => {
+      refreshCompressionReport();
+    });
+
+    settingsForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      saveSettings();
+    });
+
+    resetHistory.addEventListener('click', async () => {
+      settingsError.textContent = '';
+      try {
+        await fetchJSON('/api/history/reset', {method: 'POST'});
+        restoreEmptyState();
+        await refreshCompressionReport();
+      } catch (error) {
+        settingsError.textContent = error.message;
+      }
+    });
+
+    resetSummary.addEventListener('click', () => {
+      resetEndpoint('/api/summary/reset');
+    });
+
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        if (!isSending && input.value.trim() !== '') {
+          form.requestSubmit();
+        }
+      }
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const text = input.value.trim();
+      if (!text || isSending) {
+        return;
+      }
+
+      addMessage('user', text);
+      input.value = '';
+      resizeInput();
+      input.focus();
+      setSending(true);
+      const progress = addProgressMessage('checking');
+      const checkingStartedAt = Date.now();
+
+      try {
+        let report = null;
+        try {
+          report = await refreshCompressionReport();
+        } catch (error) {
+          compressionChip.textContent = 'Compression: report error';
+        }
+        await holdPhase(checkingStartedAt, 350);
+
+        let summarizingStartedAt = 0;
+        if (report && report.summary_update_status === 'ready') {
+          updateProgressMessage(progress, 'summarizing');
+          compressionChip.textContent = 'Compression: on · summarizing';
+          setStatus('Summarizing old messages', 'busy');
+          summarizingStartedAt = Date.now();
+        }
+
+        const prepared = await fetchJSON('/api/context/prepare', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({message: text}),
+        });
+        if (prepared.compression_report) {
+          renderCompressionReport(prepared.compression_report);
+        }
+        if (summarizingStartedAt) {
+          await holdPhase(summarizingStartedAt, 650);
+        }
+        if (prepared.compression_report && prepared.compression_report.summary_update_status === 'updated') {
+          updateProgressMessage(progress, 'updated');
+          setStatus('Summary updated', 'busy');
+          await delay(450);
+        }
+
+        updateProgressMessage(progress, 'answering');
+        setStatus('Agent is answering', 'busy');
+        const answeringStartedAt = Date.now();
+
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({message: text}),
+        });
+        await holdPhase(answeringStartedAt, 450);
+        const data = await response.json();
+        if (!response.ok) {
+          removeProgressMessage(progress);
+          addMessage('agent', data.error || 'Ошибка запроса', true, data.token_report || null, data.usage || null, data.compression_report || null);
+          if (data.compression_report) {
+            renderCompressionReport(data.compression_report);
+          }
+          await refreshCompressionReport().catch(() => {});
+          setStatus('Ошибка', 'error');
+          return;
+        }
+        removeProgressMessage(progress);
+        addMessage('agent', data.content || '', false, data.token_report || null, data.usage || null, data.compression_report || null);
+        if (data.compression_report) {
+          renderCompressionReport(data.compression_report);
+        }
+        await refreshCompressionReport().catch(() => {});
+        setStatus('Готов');
+      } catch (error) {
+        if (error.data && error.data.compression_report) {
+          renderCompressionReport(error.data.compression_report);
+        }
+        removeProgressMessage(progress);
+        addMessage('agent', error.message, true);
+        setStatus('Ошибка', 'error');
+      } finally {
+        setSending(false);
+        input.focus();
+      }
+    });
+
+    resizeInput();
+    updateButtonState();
+    loadSettings();
+    refreshCompressionReport();
+  </script>
+</body>
+</html>

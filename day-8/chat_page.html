@@ -188,7 +188,8 @@
       border-radius: 8px;
       background: #ffffff;
       padding: 5px 7px;
-      white-space: nowrap;
+      max-width: 100%;
+      overflow-wrap: anywhere;
     }
 
     .markdown > :first-child {
@@ -441,7 +442,7 @@
     const CODE_FENCE = TICK.repeat(3);
     let isSending = false;
 
-    function addMessage(role, text, isError = false, tokenReport = null, usage = null) {
+    function addMessage(role, text, isError = false, tokenReport = null, usage = null, sessionUsage = null) {
       removeEmptyState();
       const viewRole = role === 'assistant' ? 'agent' : role;
       const item = document.createElement('section');
@@ -457,43 +458,124 @@
 
       item.append(label, bubble);
       if (tokenReport) {
-        item.append(createMetrics(tokenReport, usage));
+        item.append(createMetrics(tokenReport, usage, sessionUsage));
       }
       messages.append(item);
       messages.scrollTop = messages.scrollHeight;
     }
 
-    function createMetrics(report, usage) {
+    function createMetrics(report, usage, sessionUsage) {
       const metrics = document.createElement('div');
       metrics.className = 'metrics';
-      const source = usage ? {
-        input: usage.prompt_tokens,
-        output: usage.completion_tokens,
-        overall: usage.total_tokens,
-      } : hasCalibration(report) ? {
-        input: report.prompt_tokens,
-        output: report.answer_tokens,
-        overall: report.total_tokens,
-      } : {
-        input: report.raw_prompt_tokens || report.prompt_tokens,
-        output: report.raw_answer_tokens || report.answer_tokens,
-        overall: report.raw_total_tokens || report.total_tokens,
-      };
+      const turn = usage ? usageFromAPI(usage) : usageFromEstimate(report);
+      const session = sessionFromResponse(sessionUsage, Boolean(usage));
       const values = [
-        ['Input', source.input],
-        ['Output', source.output],
-        ['Overall', source.overall],
+        [metricLabel('Turn', turn.source), usageText(turn)],
       ];
-      if (usage) {
-        metrics.dataset.source = 'api';
+      if (session) {
+        values.push([metricLabel('Session', session.source), usageText(session)]);
       }
       for (const [label, value] of values) {
         const item = document.createElement('span');
         item.className = 'metric';
-        item.textContent = label + ': ' + formatNumber(value || 0);
+        item.textContent = label + ': ' + value;
         metrics.append(item);
       }
       return metrics;
+    }
+
+    function metricLabel(name, source) {
+      return name + ' ' + source;
+    }
+
+    function usageFromAPI(usage) {
+      const inputTokens = Number(usage.prompt_tokens || 0);
+      const outputTokens = Number(usage.completion_tokens || 0);
+      return {
+        input: inputTokens,
+        output: outputTokens,
+        reasoning: usageReasoningTokens(usage),
+        reasoningKnown: hasUsageReasoning(usage),
+        overall: Number(usage.total_tokens || inputTokens + outputTokens),
+        source: 'API',
+      };
+    }
+
+    function usageFromEstimate(report) {
+      return {
+        input: Number(report.prompt_tokens || report.raw_prompt_tokens || 0),
+        output: Number(report.answer_tokens || report.raw_answer_tokens || 0),
+        reasoning: 0,
+        reasoningKnown: false,
+        overall: Number(report.total_tokens || report.raw_total_tokens || 0),
+        source: 'оценка',
+      };
+    }
+
+    function sessionFromResponse(sessionUsage, preferAPI) {
+      if (!sessionUsage) {
+        return null;
+      }
+      const api = bucketFromSession(sessionUsage.api, 'API');
+      const estimate = bucketFromSession(sessionUsage.estimate, 'оценка');
+      if (preferAPI && api) {
+        return api;
+      }
+      if (!preferAPI && estimate) {
+        return estimate;
+      }
+      return api || estimate;
+    }
+
+    function bucketFromSession(bucket, source) {
+      if (!bucket || Number(bucket.successful_turns || 0) === 0) {
+        return null;
+      }
+      return {
+        input: Number(bucket.prompt_tokens || 0),
+        output: Number(bucket.completion_tokens || 0),
+        reasoning: Number(bucket.reasoning_tokens || 0),
+        reasoningKnown: Boolean(bucket.reasoning_tokens_known),
+        overall: Number(bucket.total_tokens || 0),
+        source,
+      };
+    }
+
+    function usageText(source) {
+      const reasoning = source.reasoningKnown ? formatNumber(source.reasoning) : 'н/д';
+      return 'Input ' + formatNumber(source.input) +
+        ' / Output ' + formatNumber(source.output) +
+        ' / Reasoning ' + reasoning +
+        ' / Overall ' + formatNumber(source.overall);
+    }
+
+    function usageReasoningTokens(usage) {
+      if (hasOwnNumber(usage, 'reasoning_tokens')) {
+        return Number(usage.reasoning_tokens);
+      }
+      if (hasOwnNumber(usage, 'thinking_tokens')) {
+        return Number(usage.thinking_tokens);
+      }
+      const details = usage.completion_tokens_details || usage.completion_tokens_detail || {};
+      if (hasOwnNumber(details, 'reasoning_tokens')) {
+        return Number(details.reasoning_tokens);
+      }
+      if (hasOwnNumber(details, 'thinking_tokens')) {
+        return Number(details.thinking_tokens);
+      }
+      return 0;
+    }
+
+    function hasUsageReasoning(usage) {
+      const details = usage.completion_tokens_details || usage.completion_tokens_detail || {};
+      return hasOwnNumber(usage, 'reasoning_tokens') ||
+        hasOwnNumber(usage, 'thinking_tokens') ||
+        hasOwnNumber(details, 'reasoning_tokens') ||
+        hasOwnNumber(details, 'thinking_tokens');
+    }
+
+    function hasOwnNumber(value, key) {
+      return value && Object.prototype.hasOwnProperty.call(value, key) && Number.isFinite(Number(value[key]));
     }
 
     function hasCalibration(report) {
@@ -822,12 +904,12 @@
         const data = await response.json();
         if (!response.ok) {
           typing.remove();
-          addMessage('agent', data.error || 'Ошибка запроса', true, data.token_report || null, data.usage || null);
+          addMessage('agent', data.error || 'Ошибка запроса', true, data.token_report || null, data.usage || null, data.session_usage || null);
           setStatus('Ошибка', 'error');
           return;
         }
         typing.remove();
-        addMessage('agent', data.content || '', false, data.token_report || null, data.usage || null);
+        addMessage('agent', data.content || '', false, data.token_report || null, data.usage || null, data.session_usage || null);
         setStatus('Готов');
       } catch (error) {
         typing.remove();

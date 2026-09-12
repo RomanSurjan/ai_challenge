@@ -259,6 +259,92 @@ func TestAgentAskPersistsHistoryAndReloadsAfterRestart(t *testing.T) {
 	}
 }
 
+func TestJSONMessageStoreLoadsOldHistoryWithoutSessionUsage(t *testing.T) {
+	historyPath := filepath.Join(t.TempDir(), "history.json")
+	oldHistory := `{
+		"version": 1,
+		"messages": [
+			{"role": "user", "content": "старый вопрос"},
+			{"role": "assistant", "content": "старый ответ"}
+		],
+		"updated_at": "2026-09-11T00:00:00Z"
+	}`
+	if err := os.WriteFile(historyPath, []byte(oldHistory), 0o600); err != nil {
+		t.Fatalf("write old history: %v", err)
+	}
+
+	state, err := NewJSONMessageStore(historyPath).LoadState(context.Background())
+	if err != nil {
+		t.Fatalf("LoadState returned error: %v", err)
+	}
+	if len(state.Messages) != 2 {
+		t.Fatalf("unexpected messages: %+v", state.Messages)
+	}
+	if state.SessionUsage.API.SuccessfulTurns != 0 || state.SessionUsage.Estimate.SuccessfulTurns != 0 {
+		t.Fatalf("old history should load with empty usage, got: %+v", state.SessionUsage)
+	}
+}
+
+func TestAgentAskAccumulatesAPIUsageAcrossSuccessfulTurns(t *testing.T) {
+	historyPath := filepath.Join(t.TempDir(), "history.json")
+	requestCount := 0
+	client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		requestCount++
+		switch requestCount {
+		case 1:
+			return response(http.StatusOK, `{
+				"choices": [{"message": {"content": "Первый ответ"}, "finish_reason": "stop"}],
+				"usage": {"prompt_tokens": 3, "completion_tokens": 4, "total_tokens": 7}
+			}`), nil
+		case 2:
+			return response(http.StatusOK, `{
+				"choices": [{"message": {"content": "Второй ответ"}, "finish_reason": "stop"}],
+				"usage": {
+					"prompt_tokens": 5,
+					"completion_tokens": 6,
+					"total_tokens": 11,
+					"completion_tokens_details": {"reasoning_tokens": 2}
+				}
+			}`), nil
+		default:
+			t.Fatalf("unexpected API call #%d", requestCount)
+			return nil, nil
+		}
+	})}
+	store := NewJSONMessageStore(historyPath)
+	agent := NewAgent(AgentConfig{
+		APIKey:       "test-key",
+		BaseURL:      "https://example.test",
+		Timeout:      time.Second,
+		ContextLimit: 1000,
+		Memory:       store,
+	}, client)
+
+	if _, err := agent.Ask(context.Background(), "первый вопрос"); err != nil {
+		t.Fatalf("first Ask returned error: %v", err)
+	}
+	second, err := agent.Ask(context.Background(), "второй вопрос")
+	if err != nil {
+		t.Fatalf("second Ask returned error: %v", err)
+	}
+
+	state, err := store.LoadState(context.Background())
+	if err != nil {
+		t.Fatalf("load state: %v", err)
+	}
+	for name, usage := range map[string]UsageBucket{
+		"persisted": state.SessionUsage.API,
+		"response":  second.SessionUsage.API,
+	} {
+		if usage.PromptTokens != 8 || usage.CompletionTokens != 10 || usage.TotalTokens != 18 || usage.SuccessfulTurns != 2 {
+			t.Fatalf("%s usage was not accumulated: %+v", name, usage)
+		}
+		if !usage.ReasoningTokensKnown || usage.ReasoningTokens != 2 {
+			t.Fatalf("%s reasoning usage was not accumulated: %+v", name, usage)
+		}
+	}
+}
+
 func TestAgentAskDoesNotSaveHistoryOnAPIError(t *testing.T) {
 	historyPath := filepath.Join(t.TempDir(), "history.json")
 	client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
@@ -288,10 +374,21 @@ func TestAgentAskDoesNotSaveHistoryOnAPIError(t *testing.T) {
 func TestAgentAskReturnsContextLimitErrorWithoutAPICall(t *testing.T) {
 	historyPath := filepath.Join(t.TempDir(), "history.json")
 	store := NewJSONMessageStore(historyPath)
-	if err := store.Save(context.Background(), []chatMessage{
-		{Role: "user", Content: strings.Repeat("длинная история ", 20)},
-		{Role: "assistant", Content: "ответ"},
-	}); err != nil {
+	initialState := ConversationState{
+		Messages: []chatMessage{
+			{Role: "user", Content: strings.Repeat("длинная история ", 20)},
+			{Role: "assistant", Content: "ответ"},
+		},
+		SessionUsage: SessionUsage{
+			API: UsageBucket{
+				PromptTokens:     10,
+				CompletionTokens: 5,
+				TotalTokens:      15,
+				SuccessfulTurns:  1,
+			},
+		},
+	}
+	if err := store.SaveState(context.Background(), initialState); err != nil {
 		t.Fatalf("save history: %v", err)
 	}
 
@@ -320,12 +417,15 @@ func TestAgentAskReturnsContextLimitErrorWithoutAPICall(t *testing.T) {
 		t.Fatalf("unexpected limit report: %+v", limitErr.Report)
 	}
 
-	history, loadErr := store.Load(context.Background())
+	state, loadErr := store.LoadState(context.Background())
 	if loadErr != nil {
 		t.Fatalf("load history: %v", loadErr)
 	}
-	if len(history) != 2 {
-		t.Fatalf("history should not be changed after overflow: %+v", history)
+	if len(state.Messages) != 2 {
+		t.Fatalf("history should not be changed after overflow: %+v", state.Messages)
+	}
+	if state.SessionUsage.API != initialState.SessionUsage.API || state.SessionUsage.Estimate != initialState.SessionUsage.Estimate {
+		t.Fatalf("session usage should not be changed after overflow: %+v", state.SessionUsage)
 	}
 }
 
@@ -415,7 +515,15 @@ func TestHistoryAPIHandlerReturnsSavedMessages(t *testing.T) {
 
 func TestChatAPIHandlerReturnsTokenReport(t *testing.T) {
 	client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
-		return response(http.StatusOK, `{"choices":[{"message":{"content":"Ответ"},"finish_reason":"stop"}],"usage":{"prompt_tokens":11,"completion_tokens":2,"total_tokens":13}}`), nil
+		return response(http.StatusOK, `{
+			"choices": [{"message": {"content": "Ответ"}, "finish_reason": "stop"}],
+			"usage": {
+				"prompt_tokens": 11,
+				"completion_tokens": 2,
+				"total_tokens": 13,
+				"reasoning_tokens": 1
+			}
+		}`), nil
 	})}
 	agent := NewAgent(AgentConfig{
 		APIKey:       "test-key",
@@ -441,6 +549,56 @@ func TestChatAPIHandlerReturnsTokenReport(t *testing.T) {
 	}
 	if got.Usage == nil || got.Usage.TotalTokens != 13 {
 		t.Fatalf("unexpected API usage: %+v", got.Usage)
+	}
+	if !got.Usage.HasReasoningTokens() || got.Usage.ReasoningTokenCount() != 1 {
+		t.Fatalf("unexpected reasoning usage: %+v", got.Usage)
+	}
+	if got.SessionUsage.API.PromptTokens != 11 || got.SessionUsage.API.CompletionTokens != 2 || got.SessionUsage.API.TotalTokens != 13 {
+		t.Fatalf("unexpected session usage: %+v", got.SessionUsage)
+	}
+}
+
+func TestChatAPIHandlerReturnsEstimatedSessionUsageWhenAPIUsageIsMissing(t *testing.T) {
+	client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		return response(http.StatusOK, `{"choices":[{"message":{"content":"Ответ без usage"},"finish_reason":"stop"}]}`), nil
+	})}
+	agent := NewAgent(AgentConfig{
+		APIKey:       "test-key",
+		BaseURL:      "https://example.test",
+		System:       "system message",
+		Timeout:      time.Second,
+		ContextLimit: 1000,
+	}, client)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(`{"message":"Привет"}`))
+	rec := httptest.NewRecorder()
+	chatAPIHandler(agent).ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("unexpected status: %d body=%s", rec.Code, rec.Body.String())
+	}
+	var got chatAPIResponse
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got.Usage != nil {
+		t.Fatalf("usage should be absent, got: %+v", got.Usage)
+	}
+	if got.SessionUsage.Estimate.SuccessfulTurns != 1 || got.SessionUsage.Estimate.TotalTokens == 0 {
+		t.Fatalf("expected estimated session usage, got: %+v", got.SessionUsage)
+	}
+}
+
+func TestChatPageShowsDetailedTokenMetricLabels(t *testing.T) {
+	for _, want := range []string{"Turn", "Session", "оценка"} {
+		if !strings.Contains(chatPageHTML, want) {
+			t.Fatalf("chat page should contain %q", want)
+		}
+	}
+	for _, removed := range []string{"['Source'", "['Question'"} {
+		if strings.Contains(chatPageHTML, removed) {
+			t.Fatalf("chat page should not render %q as a metric", removed)
+		}
 	}
 }
 
@@ -540,6 +698,44 @@ func TestTokenMultiplierAppliesToEstimate(t *testing.T) {
 	}
 	if report.TotalTokens != report.PromptTokens+report.AnswerTokens {
 		t.Fatalf("unexpected total tokens: %+v", report)
+	}
+}
+
+func TestPrintTokenReportLabelsFallbackAsEstimate(t *testing.T) {
+	report := EstimatePromptTokenReportWithCalibration("system", nil, "hello", 1000, TokenPricing{}, DefaultTokenCalibration())
+	report = AddAnswerTokensWithCalibration(report, "answer", TokenPricing{}, DefaultTokenCalibration())
+	session := AddTurnToSessionUsage(SessionUsage{}, nil, report)
+
+	var out bytes.Buffer
+	printTokenReport(&out, report, nil, session, "")
+	text := out.String()
+	for _, want := range []string{
+		"question (estimate)",
+		"turn (estimate)",
+		"session (estimate)",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("token report should contain %q:\n%s", want, text)
+		}
+	}
+}
+
+func TestTokenUsageDetectsZeroReasoningWhenFieldIsPresent(t *testing.T) {
+	zero := 0
+	usage := tokenUsage{
+		PromptTokens:     5,
+		CompletionTokens: 2,
+		TotalTokens:      7,
+		CompletionTokensDetails: &tokenUsageDetails{
+			ReasoningTokens: &zero,
+		},
+	}
+
+	if !usage.HasReasoningTokens() {
+		t.Fatal("reasoning tokens should be known when the field is present")
+	}
+	if usage.ReasoningTokenCount() != 0 {
+		t.Fatalf("unexpected reasoning token count: %d", usage.ReasoningTokenCount())
 	}
 }
 

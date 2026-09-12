@@ -15,14 +15,9 @@ type MessageStore interface {
 	Save(ctx context.Context, messages []chatMessage) error
 }
 
-type StateStore interface {
-	LoadState(ctx context.Context) (ConversationState, error)
-	SaveState(ctx context.Context, state ConversationState) error
-}
-
-type ConversationState struct {
-	Messages     []chatMessage `json:"messages"`
-	SessionUsage SessionUsage  `json:"session_usage,omitempty"`
+type ResettableMessageStore interface {
+	MessageStore
+	Reset(ctx context.Context) error
 }
 
 type JSONMessageStore struct {
@@ -31,10 +26,9 @@ type JSONMessageStore struct {
 }
 
 type historyFile struct {
-	Version      int           `json:"version"`
-	Messages     []chatMessage `json:"messages"`
-	SessionUsage SessionUsage  `json:"session_usage,omitempty"`
-	Updated      time.Time     `json:"updated_at"`
+	Version  int           `json:"version"`
+	Messages []chatMessage `json:"messages"`
+	Updated  time.Time     `json:"updated_at"`
 }
 
 func NewJSONMessageStore(path string) *JSONMessageStore {
@@ -42,19 +36,11 @@ func NewJSONMessageStore(path string) *JSONMessageStore {
 }
 
 func (s *JSONMessageStore) Load(ctx context.Context) ([]chatMessage, error) {
-	state, err := s.LoadState(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return cloneMessages(state.Messages), nil
-}
-
-func (s *JSONMessageStore) LoadState(ctx context.Context) (ConversationState, error) {
 	if s == nil || s.path == "" {
-		return ConversationState{}, nil
+		return nil, nil
 	}
 	if err := ctx.Err(); err != nil {
-		return ConversationState{}, err
+		return nil, err
 	}
 
 	s.mu.Lock()
@@ -63,43 +49,36 @@ func (s *JSONMessageStore) LoadState(ctx context.Context) (ConversationState, er
 	data, err := os.ReadFile(s.path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return ConversationState{}, nil
+			return nil, nil
 		}
-		return ConversationState{}, fmt.Errorf("не удалось прочитать историю: %w", err)
+		return nil, fmt.Errorf("не удалось прочитать историю: %w", err)
 	}
 	if len(data) == 0 {
-		return ConversationState{}, nil
+		return nil, nil
 	}
 
 	var file historyFile
 	if err := json.Unmarshal(data, &file); err != nil {
-		return ConversationState{}, fmt.Errorf("не удалось разобрать историю: %w", err)
+		return nil, fmt.Errorf("не удалось разобрать историю: %w", err)
 	}
 	if file.Version != 1 {
-		return ConversationState{}, fmt.Errorf("неподдерживаемая версия истории: %d", file.Version)
+		return nil, fmt.Errorf("неподдерживаемая версия истории: %d", file.Version)
 	}
 	if err := validateMessages(file.Messages); err != nil {
-		return ConversationState{}, fmt.Errorf("история содержит некорректные данные: %w", err)
+		return nil, fmt.Errorf("история содержит некорректные данные: %w", err)
 	}
 
-	return ConversationState{
-		Messages:     cloneMessages(file.Messages),
-		SessionUsage: file.SessionUsage,
-	}, nil
+	return cloneMessages(file.Messages), nil
 }
 
 func (s *JSONMessageStore) Save(ctx context.Context, messages []chatMessage) error {
-	return s.SaveState(ctx, ConversationState{Messages: messages})
-}
-
-func (s *JSONMessageStore) SaveState(ctx context.Context, state ConversationState) error {
 	if s == nil || s.path == "" {
 		return nil
 	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if err := validateMessages(state.Messages); err != nil {
+	if err := validateMessages(messages); err != nil {
 		return err
 	}
 
@@ -114,10 +93,9 @@ func (s *JSONMessageStore) SaveState(ctx context.Context, state ConversationStat
 	}
 
 	file := historyFile{
-		Version:      1,
-		Messages:     cloneMessages(state.Messages),
-		SessionUsage: state.SessionUsage,
-		Updated:      time.Now().UTC(),
+		Version:  1,
+		Messages: cloneMessages(messages),
+		Updated:  time.Now().UTC(),
 	}
 	data, err := json.MarshalIndent(file, "", "  ")
 	if err != nil {
@@ -133,6 +111,23 @@ func (s *JSONMessageStore) SaveState(ctx context.Context, state ConversationStat
 
 	if err := os.Rename(tmpPath, s.path); err != nil {
 		return fmt.Errorf("не удалось заменить файл истории: %w", err)
+	}
+	return nil
+}
+
+func (s *JSONMessageStore) Reset(ctx context.Context) error {
+	if s == nil || s.path == "" {
+		return nil
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if err := os.Remove(s.path); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("не удалось очистить историю: %w", err)
 	}
 	return nil
 }
