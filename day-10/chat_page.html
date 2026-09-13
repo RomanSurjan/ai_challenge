@@ -1,0 +1,1829 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 10 Context Chat</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --panel-soft: #f9fafc;
+      --text: #171b21;
+      --muted: #667085;
+      --line: #d9e0ea;
+      --line-strong: #c7d1df;
+      --accent: #246bfe;
+      --accent-dark: #1554d1;
+      --accent-soft: #eaf1ff;
+      --agent: #ffffff;
+      --user: #246bfe;
+      --code: #eef1f5;
+      --danger: #b42318;
+      --shadow: 0 18px 44px rgba(30, 41, 59, .08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      height: 100dvh;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 20px;
+      gap: 14px;
+    }
+
+    .shell.has-context-panel {
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 4px 2px 2px;
+      position: relative;
+      z-index: 2;
+      grid-row: 1;
+    }
+
+    .header-copy {
+      min-width: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 23px;
+      font-weight: 720;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .status,
+    .context-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .status {
+      min-width: 112px;
+      justify-content: flex-end;
+    }
+
+    .context-badge {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--accent-soft);
+      color: #1d4ed8;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .settings-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .settings-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-width: 44px;
+      min-height: 40px;
+      width: 44px;
+      padding: 0;
+      border: 1px solid var(--line-strong);
+      background: var(--panel);
+      color: var(--text);
+      box-shadow: 0 8px 22px rgba(30, 41, 59, .06);
+    }
+
+    .settings-button svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2;
+    }
+
+    .settings-button:hover:not(:disabled) {
+      background: var(--panel-soft);
+      color: var(--accent-dark);
+    }
+
+    .settings-menu {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      width: min(360px, calc(100vw - 32px));
+      display: grid;
+      gap: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .settings-menu[hidden] {
+      display: none;
+    }
+
+    .settings-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .settings-title {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 760;
+      line-height: 1.25;
+    }
+
+    .settings-close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 34px;
+      min-height: 34px;
+      width: 34px;
+      padding: 0;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      color: var(--muted);
+      font-size: 21px;
+      line-height: 1;
+    }
+
+    .settings-close:hover:not(:disabled) {
+      background: var(--panel-soft);
+      color: var(--text);
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(112px, 140px);
+      gap: 10px;
+      align-items: end;
+    }
+
+    .field {
+      display: grid;
+      gap: 5px;
+    }
+
+    .field[hidden] {
+      display: none;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    select,
+    input[type="number"] {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--text);
+      font: inherit;
+      padding: 7px 10px;
+    }
+
+    .meta {
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .facts-panel,
+    .branches-panel {
+      display: grid;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 14px;
+      box-shadow: var(--shadow);
+      grid-row: 2;
+    }
+
+    .facts-panel[hidden],
+    .branches-panel[hidden] {
+      display: none;
+    }
+
+    .facts-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .facts-heading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .facts-title,
+    .branches-title {
+      margin: 0;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 720;
+      line-height: 1.2;
+    }
+
+    .facts-count {
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel-soft);
+      color: var(--muted);
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .facts-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      min-width: 34px;
+      min-height: 34px;
+      width: 34px;
+      padding: 0;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      color: var(--muted);
+      box-shadow: none;
+    }
+
+    .facts-toggle:hover:not(:disabled),
+    .facts-toggle:focus-visible {
+      background: var(--panel-soft);
+      color: var(--accent-dark);
+      outline: 2px solid rgba(36, 107, 254, .22);
+      outline-offset: 2px;
+    }
+
+    .facts-toggle svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2.2;
+      transition: transform .16s ease;
+    }
+
+    .facts-toggle[aria-expanded="true"] svg {
+      transform: rotate(180deg);
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    .facts-list,
+    .branches-list {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .facts-list[hidden] {
+      display: none;
+    }
+
+    .facts-list div {
+      display: grid;
+      grid-template-columns: minmax(80px, .35fr) minmax(0, 1fr);
+      gap: 10px;
+      border-top: 1px solid var(--line);
+      padding: 8px 0 2px;
+      min-width: 0;
+    }
+
+    .facts-list .fact-empty {
+      grid-template-columns: 1fr;
+      color: var(--muted);
+    }
+
+    .branch-row {
+      display: grid;
+      grid-template-columns: minmax(70px, auto) minmax(0, 1fr);
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-soft);
+      padding: 7px 9px;
+    }
+
+    .facts-list dt {
+      margin: 0;
+      color: var(--muted);
+      font-weight: 700;
+      overflow-wrap: anywhere;
+      min-width: 0;
+    }
+
+    .facts-list dd {
+      margin: 0;
+      overflow-wrap: anywhere;
+      min-width: 0;
+    }
+
+    .branches-head,
+    .branch-form {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .branches-summary {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .branch-form {
+      align-items: stretch;
+      justify-content: flex-start;
+    }
+
+    .branch-title-input {
+      width: min(280px, 100%);
+      min-height: 38px;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--text);
+      font: inherit;
+      padding: 7px 10px;
+    }
+
+    .branch-row {
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      align-items: center;
+    }
+
+    .branch-name {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .branch-name strong {
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .branch-name span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .branch-actions {
+      display: contents;
+    }
+
+    .panel-button {
+      min-width: 0;
+      min-height: 36px;
+      border: 1px solid var(--line-strong);
+      background: #ffffff;
+      color: var(--text);
+      padding: 0 10px;
+      font-size: 13px;
+      box-shadow: none;
+    }
+
+    .panel-button:hover:not(:disabled) {
+      background: var(--panel-soft);
+      color: var(--accent-dark);
+    }
+
+    .panel-button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .panel-button.primary:hover:not(:disabled) {
+      background: var(--accent-dark);
+      color: #ffffff;
+    }
+
+    .panel-button.danger {
+      color: var(--danger);
+    }
+
+    .status::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #16a34a;
+      box-shadow: 0 0 0 4px rgba(22, 163, 74, .12);
+    }
+
+    .status.busy::before {
+      background: #f59e0b;
+      box-shadow: 0 0 0 4px rgba(245, 158, 11, .14);
+    }
+
+    .status.error::before {
+      background: var(--danger);
+      box-shadow: 0 0 0 4px rgba(180, 35, 24, .12);
+    }
+
+    main {
+      grid-row: 2;
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .shell.has-context-panel main {
+      grid-row: 3;
+    }
+
+    .messages {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      height: 100%;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 20px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .92), rgba(249, 250, 252, .92)),
+        var(--panel-soft);
+    }
+
+    .messages.is-empty {
+      justify-content: center;
+    }
+
+    .message {
+      display: grid;
+      gap: 7px;
+      max-width: min(720px, 88%);
+    }
+
+    #empty-state {
+      align-self: center;
+      max-width: min(560px, 100%);
+      text-align: center;
+    }
+
+    #empty-state .label {
+      display: none;
+    }
+
+    #empty-state .bubble {
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      color: var(--muted);
+      padding: 0;
+    }
+
+    .message.user {
+      align-self: end;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: 0;
+    }
+
+    .user .label {
+      justify-self: end;
+    }
+
+    .bubble {
+      overflow-wrap: anywhere;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 13px 15px;
+      line-height: 1.55;
+      font-size: 15px;
+      box-shadow: 0 8px 24px rgba(30, 41, 59, .05);
+    }
+
+    .agent .bubble {
+      background: var(--agent);
+    }
+
+    .user .bubble {
+      background: var(--user);
+      border-color: var(--user);
+      color: #ffffff;
+      box-shadow: 0 10px 28px rgba(36, 107, 254, .2);
+    }
+
+    .error .bubble {
+      color: var(--danger);
+      background: #fff4f2;
+      border-color: #f1b8b2;
+    }
+
+    .markdown > :first-child {
+      margin-top: 0;
+    }
+
+    .markdown > :last-child {
+      margin-bottom: 0;
+    }
+
+    .markdown p {
+      margin: 0 0 10px;
+      white-space: pre-wrap;
+    }
+
+    .markdown ul,
+    .markdown ol {
+      margin: 0 0 10px;
+      padding-left: 22px;
+    }
+
+    .markdown li + li {
+      margin-top: 4px;
+    }
+
+    .markdown code {
+      border-radius: 6px;
+      background: var(--code);
+      color: #101828;
+      padding: 2px 5px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: .92em;
+      overflow-wrap: anywhere;
+    }
+
+    .user .markdown code {
+      background: rgba(255, 255, 255, .18);
+      color: #ffffff;
+    }
+
+    .markdown pre {
+      max-width: 100%;
+      margin: 0 0 10px;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #111827;
+      padding: 12px;
+    }
+
+    .markdown pre code {
+      display: block;
+      min-width: max-content;
+      background: transparent;
+      color: #f9fafb;
+      padding: 0;
+      white-space: pre;
+      overflow-wrap: normal;
+    }
+
+    .markdown a {
+      color: var(--accent-dark);
+      font-weight: 650;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    .user .markdown a {
+      color: #ffffff;
+    }
+
+    .typing .bubble {
+      color: var(--muted);
+      background: #ffffff;
+    }
+
+    .typing-dots {
+      display: inline-flex;
+      gap: 4px;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+
+    .typing-dots span {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: .38;
+      animation: typingPulse 1.15s infinite ease-in-out;
+    }
+
+    .typing-dots span:nth-child(2) {
+      animation-delay: .15s;
+    }
+
+    .typing-dots span:nth-child(3) {
+      animation-delay: .3s;
+    }
+
+    @keyframes typingPulse {
+      0%, 80%, 100% {
+        transform: translateY(0);
+        opacity: .32;
+      }
+
+      40% {
+        transform: translateY(-2px);
+        opacity: .9;
+      }
+    }
+
+    form {
+      grid-row: 3;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 10px 10px 10px 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .shell.has-context-panel form {
+      grid-row: 4;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 48px;
+      max-height: 170px;
+      resize: none;
+      overflow-y: auto;
+      border: 0;
+      outline: none;
+      color: var(--text);
+      font: inherit;
+      line-height: 1.45;
+      background: transparent;
+    }
+
+    textarea::placeholder {
+      color: #98a2b3;
+    }
+
+    textarea:disabled {
+      cursor: default;
+      color: var(--muted);
+    }
+
+    button {
+      min-width: 112px;
+      min-height: 44px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #ffffff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .16s ease, opacity .16s ease, transform .16s ease;
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--accent-dark);
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .62;
+    }
+
+    .composer-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      padding: 0 2px 2px;
+    }
+
+    @media (max-width: 640px) {
+      .shell {
+        padding: 12px;
+        gap: 10px;
+      }
+
+      header {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .header-actions {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .status {
+        text-align: left;
+        min-width: 0;
+      }
+
+      .context-badge {
+        max-width: calc(100vw - 96px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .settings-wrap {
+        margin-left: auto;
+      }
+
+      .settings-menu {
+        position: fixed;
+        top: 72px;
+        left: 12px;
+        right: 12px;
+        width: auto;
+        max-height: calc(100dvh - 96px);
+        overflow-y: auto;
+      }
+
+      .settings-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .facts-panel,
+      .branches-panel {
+        padding: 12px;
+      }
+
+      .facts-head {
+        align-items: flex-start;
+      }
+
+      .facts-heading {
+        flex-wrap: wrap;
+      }
+
+      .facts-list div {
+        grid-template-columns: 1fr;
+        gap: 3px;
+      }
+
+      .branches-head,
+      .branch-form {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .branch-row {
+        grid-template-columns: 1fr;
+      }
+
+      .meta {
+        text-align: left;
+      }
+
+      .messages {
+        padding: 12px;
+      }
+
+      .message {
+        max-width: 100%;
+      }
+
+      form {
+        grid-template-columns: 1fr;
+        padding: 10px;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .facts-toggle,
+      .settings-button,
+      .settings-close {
+        width: 34px;
+      }
+
+      .composer-note {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="header-copy">
+        <h1>Day 10 Context Chat</h1>
+        <div class="subtitle">Локальный агент DeepSeek со стратегиями управления контекстом</div>
+      </div>
+      <div class="header-actions">
+        <div class="status" id="status" aria-live="polite">Готов</div>
+        <div class="context-badge" id="context-badge">Sliding · window 8</div>
+        <div class="settings-wrap" id="settings-wrap">
+          <button class="settings-button" id="settings-toggle" type="button" aria-label="Открыть настройки чата" aria-expanded="false" aria-controls="settings-menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"></path>
+              <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1A2 2 0 1 1 4.2 17l.1-.1A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.6-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.3 7A2 2 0 1 1 7.1 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1A2 2 0 1 1 19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1a2 2 0 0 1 0 4H21a1.7 1.7 0 0 0-1.6 1Z"></path>
+            </svg>
+          </button>
+          <section class="settings-menu" id="settings-menu" aria-label="Настройки контекста" hidden>
+            <div class="settings-head">
+              <h2 class="settings-title">Настройки чата</h2>
+              <button class="settings-close" id="settings-close" type="button" aria-label="Закрыть настройки">×</button>
+            </div>
+            <div class="settings-grid">
+              <div class="field">
+                <label for="strategy-select">Стратегия</label>
+                <select id="strategy-select">
+                  <option value="sliding">Sliding Window</option>
+                  <option value="facts">Sticky Facts</option>
+                  <option value="branching">Branching</option>
+                </select>
+              </div>
+              <div class="field" id="window-field">
+                <label for="window-input">Окно сообщений</label>
+                <input id="window-input" type="number" min="0" step="1" value="8">
+              </div>
+            </div>
+            <div class="meta" id="context-meta">strategy=sliding · window=8</div>
+          </section>
+        </div>
+      </div>
+    </header>
+    <section class="facts-panel" id="facts-panel" aria-label="Sticky Facts" hidden>
+      <div class="facts-head">
+        <div class="facts-heading">
+          <h2 class="facts-title">Sticky Facts</h2>
+          <span class="facts-count" id="facts-count">0 facts</span>
+        </div>
+        <button class="facts-toggle" id="facts-toggle" type="button" aria-label="Развернуть Sticky Facts" aria-expanded="false" aria-controls="facts-list">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m6 9 6 6 6-6"></path>
+          </svg>
+        </button>
+      </div>
+      <dl class="facts-list" id="facts-list" hidden>
+        <div>
+          <dt>Статус</dt>
+          <dd>Пока нет facts</dd>
+        </div>
+      </dl>
+    </section>
+    <section class="branches-panel" id="branches-panel" aria-label="Branching" hidden>
+      <div class="branches-head">
+        <div>
+          <h2 class="branches-title">Branching</h2>
+          <div class="branches-summary" id="branches-summary">Active: main · checkpoint 0</div>
+        </div>
+        <button class="panel-button primary" id="checkpoint-button" type="button">Checkpoint</button>
+      </div>
+      <div class="branch-form">
+        <input class="branch-title-input" id="branch-title-input" type="text" placeholder="Название новой ветки">
+        <button class="panel-button" id="create-branch-button" type="button">Новая ветка</button>
+      </div>
+      <div class="branches-list" id="branches-list">
+        <div class="branch-row">
+          <div class="branch-name">
+            <strong>Пока нет веток</strong>
+            <span>Ветка main появится автоматически</span>
+          </div>
+        </div>
+      </div>
+    </section>
+    <main>
+      <div class="messages is-empty" id="messages">
+        <section class="message agent" id="empty-state">
+          <div class="label">Agent</div>
+          <div class="bubble markdown"><p>Привет. Задай вопрос, и я отвечу через локального агента.</p></div>
+        </section>
+      </div>
+    </main>
+    <form id="chat-form">
+      <div>
+        <textarea id="message-input" name="message" placeholder="Напишите сообщение" autocomplete="off" rows="1" required autofocus></textarea>
+        <div class="composer-note">Enter отправляет, Shift+Enter переносит строку</div>
+      </div>
+      <button type="submit" disabled>Отправить</button>
+    </form>
+  </div>
+
+  <script>
+    const form = document.querySelector('#chat-form');
+    const input = document.querySelector('#message-input');
+    const messages = document.querySelector('#messages');
+    const shell = document.querySelector('.shell');
+    const status = document.querySelector('#status');
+    const button = form.querySelector('button');
+    const strategySelect = document.querySelector('#strategy-select');
+    const windowField = document.querySelector('#window-field');
+    const windowInput = document.querySelector('#window-input');
+    const contextMeta = document.querySelector('#context-meta');
+    const contextBadge = document.querySelector('#context-badge');
+    const settingsWrap = document.querySelector('#settings-wrap');
+    const settingsToggle = document.querySelector('#settings-toggle');
+    const settingsMenu = document.querySelector('#settings-menu');
+    const settingsClose = document.querySelector('#settings-close');
+    const factsPanel = document.querySelector('#facts-panel');
+    const factsToggle = document.querySelector('#facts-toggle');
+    const factsCount = document.querySelector('#facts-count');
+    const factsList = document.querySelector('#facts-list');
+    const branchesPanel = document.querySelector('#branches-panel');
+    const branchesSummary = document.querySelector('#branches-summary');
+    const branchesList = document.querySelector('#branches-list');
+    const checkpointButton = document.querySelector('#checkpoint-button');
+    const createBranchButton = document.querySelector('#create-branch-button');
+    const branchTitleInput = document.querySelector('#branch-title-input');
+    const TICK = String.fromCharCode(96);
+    const CODE_FENCE = TICK.repeat(3);
+    let isSending = false;
+    let settingsSaveTimer = null;
+    let lastFactsCount = 0;
+    let lastBranches = null;
+    let lastContext = null;
+    let factsPanelExpanded = false;
+    let factsPanelUserToggled = false;
+
+    function addMessage(role, text, isError = false) {
+      removeEmptyState();
+      const viewRole = role === 'assistant' ? 'agent' : role;
+      const item = document.createElement('section');
+      item.className = 'message ' + viewRole + (isError ? ' error' : '');
+
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = viewRole === 'user' ? 'Вы' : 'Agent';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble markdown';
+      bubble.append(renderMarkdown(text));
+
+      item.append(label, bubble);
+      messages.append(item);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function removeEmptyState() {
+      const emptyState = document.querySelector('#empty-state');
+      if (emptyState) {
+        emptyState.remove();
+      }
+      messages.classList.remove('is-empty');
+    }
+
+    function addTypingMessage() {
+      removeEmptyState();
+      const item = document.createElement('section');
+      item.className = 'message agent typing';
+
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = 'Agent';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.append('Думаю');
+
+      const dots = document.createElement('span');
+      dots.className = 'typing-dots';
+      dots.setAttribute('aria-hidden', 'true');
+      dots.append(document.createElement('span'), document.createElement('span'), document.createElement('span'));
+      bubble.append(dots);
+
+      item.append(label, bubble);
+      messages.append(item);
+      messages.scrollTop = messages.scrollHeight;
+      return item;
+    }
+
+    function setStatus(text, state = '') {
+      status.textContent = text;
+      status.className = 'status' + (state ? ' ' + state : '');
+    }
+
+    function currentSettings() {
+      return {
+        strategy: strategySelect.value,
+        window_messages: Math.max(0, Number.parseInt(windowInput.value || '0', 10) || 0),
+      };
+    }
+
+    function applySettings(settings) {
+      if (!settings) {
+        return;
+      }
+      strategySelect.value = settings.strategy || 'sliding';
+      windowInput.value = String(settings.window_messages ?? 8);
+      updateStrategyControls();
+      renderContextMeta();
+    }
+
+    function renderContextMeta(context) {
+      if (context) {
+        lastContext = context;
+      }
+      const strategy = context?.strategy || strategySelect.value;
+      const parts = ['strategy=' + strategy];
+      if (strategy === 'facts') {
+        const factsCount = context?.facts_count ?? lastFactsCount;
+        contextBadge.textContent = 'Sticky Facts';
+        parts.push('facts=' + factsCount);
+      } else if (strategy === 'branching') {
+        const branchTitle = context?.branch_title || activeBranchTitle() || 'main';
+        const branchId = context?.branch_id || lastBranches?.active_branch_id || 'main';
+        const checkpointMessages = context?.checkpoint_messages ?? lastBranches?.checkpoint_messages ?? 0;
+        const branchMessages = context?.branch_messages ?? activeBranchMessageCount();
+        contextBadge.textContent = 'Branching · ' + branchTitle;
+        parts.push('branch=' + (branchTitle || branchId));
+        parts.push('checkpoint=' + checkpointMessages);
+        parts.push('branch_messages=' + branchMessages);
+      } else {
+        const windowMessages = context?.window_messages ?? windowInput.value;
+        contextBadge.textContent = strategyLabel(strategy) + ' · window ' + windowMessages;
+        parts.push('window=' + windowMessages);
+      }
+      if (context?.context_messages !== undefined) {
+        parts.push('sent=' + context.context_messages);
+      }
+      if (context?.history_messages !== undefined) {
+        parts.push('stored=' + context.history_messages);
+      }
+      contextMeta.textContent = parts.join(' · ');
+    }
+
+    function strategyLabel(strategy) {
+      if (strategy === 'sliding') {
+        return 'Sliding';
+      }
+      if (strategy === 'facts') {
+        return 'Facts';
+      }
+      if (strategy === 'branching') {
+        return 'Branching';
+      }
+      return String(strategy || 'Strategy');
+    }
+
+    function updateStrategyControls() {
+      factsPanel.hidden = strategySelect.value !== 'facts';
+      branchesPanel.hidden = strategySelect.value !== 'branching';
+      windowField.hidden = strategySelect.value !== 'sliding';
+      shell.classList.toggle('has-context-panel', strategySelect.value === 'facts' || strategySelect.value === 'branching');
+      updateFactsPanelState();
+    }
+
+    function openSettings() {
+      settingsMenu.hidden = false;
+      settingsToggle.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeSettings() {
+      settingsMenu.hidden = true;
+      settingsToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    function toggleSettings() {
+      if (settingsMenu.hidden) {
+        openSettings();
+      } else {
+        closeSettings();
+      }
+    }
+
+    function queueSaveSettings(delay = 0) {
+      window.clearTimeout(settingsSaveTimer);
+      settingsSaveTimer = window.setTimeout(() => {
+        settingsSaveTimer = null;
+        saveSettings().catch((error) => setStatus(error.message, 'error'));
+      }, delay);
+    }
+
+    async function saveSettings() {
+      const response = await fetch('/api/settings', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(currentSettings()),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Не удалось сохранить настройки');
+      }
+      applySettings(data);
+      await loadPanels();
+      await loadHistoryIntoChat();
+    }
+
+    async function loadSettings() {
+      try {
+        const response = await fetch('/api/settings');
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Не удалось загрузить настройки');
+        }
+        applySettings(data);
+        await loadPanels();
+      } catch (error) {
+        setStatus('Настройки не загружены', 'error');
+      } finally {
+        await loadHistoryIntoChat();
+      }
+    }
+
+    async function loadPanels() {
+      await Promise.all([loadFacts(), loadBranches()]);
+    }
+
+    async function loadFacts() {
+      try {
+        const response = await fetch('/api/facts');
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Не удалось загрузить facts');
+        }
+        renderFacts(data.facts || {});
+      } catch (error) {
+        renderFactsError(error.message || 'Не удалось загрузить facts');
+      }
+    }
+
+    function renderFactsError(message) {
+      factsList.replaceChildren();
+      lastFactsCount = 0;
+      factsCount.textContent = 'Ошибка';
+      if (!factsPanelUserToggled) {
+        factsPanelExpanded = true;
+      }
+      factsList.append(createFactRow('', 'Ошибка загрузки facts: ' + message));
+      updateFactsPanelState();
+      refreshContextMetaAfterFactsLoad();
+    }
+
+    function renderFacts(facts) {
+      factsList.replaceChildren();
+      const entries = Object.entries(facts || {}).sort((left, right) => left[0].localeCompare(right[0], 'ru'));
+      lastFactsCount = entries.length;
+      factsCount.textContent = formatFactsCount(lastFactsCount);
+      if (!factsPanelUserToggled) {
+        factsPanelExpanded = entries.length > 0;
+      }
+      if (!entries.length) {
+        factsList.append(createFactRow('', 'Пока нет facts'));
+        updateFactsPanelState();
+        refreshContextMetaAfterFactsLoad();
+        return;
+      }
+      for (const [key, value] of entries) {
+        factsList.append(createFactRow(key, value));
+      }
+      updateFactsPanelState();
+      refreshContextMetaAfterFactsLoad();
+    }
+
+    function formatFactsCount(count) {
+      return count + ' ' + (count === 1 ? 'fact' : 'facts');
+    }
+
+    function updateFactsPanelState() {
+      factsList.hidden = !factsPanelExpanded;
+      factsToggle.setAttribute('aria-expanded', String(factsPanelExpanded));
+      factsToggle.setAttribute('aria-label', (factsPanelExpanded ? 'Свернуть' : 'Развернуть') + ' Sticky Facts');
+    }
+
+    async function loadBranches() {
+      try {
+        const response = await fetch('/api/branches');
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Не удалось загрузить ветки');
+        }
+        renderBranches(data);
+      } catch (error) {
+        renderBranches(null);
+      }
+    }
+
+    function renderBranches(data) {
+      lastBranches = data;
+      branchesList.replaceChildren();
+      const branches = data?.branches || [];
+      const active = branches.find((branch) => branch.active) || branches[0];
+      const checkpointMessages = data?.checkpoint_messages ?? 0;
+      branchesSummary.textContent = 'Active: ' + (active?.title || active?.id || 'main') + ' · checkpoint ' + checkpointMessages;
+
+      if (!branches.length) {
+        const empty = document.createElement('div');
+        empty.className = 'branch-row';
+        const name = document.createElement('div');
+        name.className = 'branch-name';
+        const title = document.createElement('strong');
+        title.textContent = 'Пока нет веток';
+        const details = document.createElement('span');
+        details.textContent = 'Ветка main появится автоматически';
+        name.append(title, details);
+        empty.append(name);
+        branchesList.append(empty);
+        refreshContextMetaAfterBranchesLoad();
+        return;
+      }
+
+      for (const branch of branches) {
+        branchesList.append(createBranchRow(branch, branches.length));
+      }
+      refreshContextMetaAfterBranchesLoad();
+    }
+
+    function createBranchRow(branch, branchCount) {
+      const row = document.createElement('div');
+      row.className = 'branch-row';
+
+      const name = document.createElement('div');
+      name.className = 'branch-name';
+      const title = document.createElement('strong');
+      title.textContent = branch.title + (branch.active ? ' · active' : '');
+      const details = document.createElement('span');
+      details.textContent = branch.message_count + ' сообщений · ' + branch.id;
+      name.append(title, details);
+
+      const switchButton = document.createElement('button');
+      switchButton.className = 'panel-button';
+      switchButton.type = 'button';
+      switchButton.textContent = 'Открыть';
+      switchButton.disabled = branch.active;
+      switchButton.addEventListener('click', () => switchBranch(branch.id));
+
+      const deleteButton = document.createElement('button');
+      deleteButton.className = 'panel-button danger';
+      deleteButton.type = 'button';
+      deleteButton.textContent = 'Удалить';
+      deleteButton.disabled = branchCount <= 1;
+      deleteButton.addEventListener('click', () => deleteBranch(branch.id));
+
+      row.append(name, switchButton, deleteButton);
+      return row;
+    }
+
+    function refreshContextMetaAfterBranchesLoad() {
+      if (lastContext && lastContext.strategy === strategySelect.value) {
+        renderContextMeta(lastContext);
+        return;
+      }
+      renderContextMeta();
+    }
+
+    function activeBranchTitle() {
+      const active = (lastBranches?.branches || []).find((branch) => branch.active);
+      return active?.title || active?.id || '';
+    }
+
+    function activeBranchMessageCount() {
+      const active = (lastBranches?.branches || []).find((branch) => branch.active);
+      return active?.message_count ?? 0;
+    }
+
+    async function checkpointBranch() {
+      if (await changeBranches('/api/branches/checkpoint', {method: 'POST'}, 'Checkpoint сохранён')) {
+        await loadHistoryIntoChat();
+      }
+    }
+
+    async function createBranch() {
+      const title = branchTitleInput.value.trim();
+      if (await changeBranches('/api/branches', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({title}),
+      }, 'Ветка создана')) {
+        branchTitleInput.value = '';
+        await loadHistoryIntoChat();
+      }
+    }
+
+    async function switchBranch(id) {
+      if (await changeBranches('/api/branches/active', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({id}),
+      }, 'Ветка открыта')) {
+        await loadHistoryIntoChat();
+      }
+    }
+
+    async function deleteBranch(id) {
+      if (await changeBranches('/api/branches/' + encodeURIComponent(id), {method: 'DELETE'}, 'Ветка удалена')) {
+        await loadHistoryIntoChat();
+      }
+    }
+
+    async function changeBranches(url, options, successText) {
+      try {
+        const response = await fetch(url, options);
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Не удалось изменить ветки');
+        }
+        renderBranches(data);
+        setStatus(successText);
+        return true;
+      } catch (error) {
+        setStatus(error.message, 'error');
+        return false;
+      }
+    }
+
+    async function loadHistoryIntoChat() {
+      try {
+        const response = await fetch('/api/history');
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Не удалось загрузить историю');
+        }
+        renderHistory(data.messages || []);
+      } catch (error) {
+        renderHistoryError(error.message || 'Не удалось загрузить историю');
+      }
+    }
+
+    function renderHistory(history) {
+      messages.replaceChildren();
+      messages.classList.remove('is-empty');
+      if (!history.length) {
+        renderEmptyState();
+        return;
+      }
+      for (const message of history) {
+        addMessage(message.role === 'assistant' ? 'agent' : 'user', message.content || '');
+      }
+    }
+
+    function renderHistoryError(message) {
+      messages.replaceChildren();
+      messages.classList.remove('is-empty');
+      addMessage('agent', 'Не удалось загрузить историю: ' + message, true);
+      setStatus('История не загружена', 'error');
+    }
+
+    function renderEmptyState() {
+      messages.classList.add('is-empty');
+      const empty = document.createElement('section');
+      empty.className = 'message agent';
+      empty.id = 'empty-state';
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = 'Agent';
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble markdown';
+      const text = document.createElement('p');
+      text.textContent = strategySelect.value === 'branching'
+        ? 'В активной ветке пока нет сообщений.'
+        : 'Сохраненной истории пока нет. Напишите первое сообщение.';
+      bubble.append(text);
+      empty.append(label, bubble);
+      messages.append(empty);
+    }
+
+    function refreshContextMetaAfterFactsLoad() {
+      if (lastContext && lastContext.strategy === strategySelect.value) {
+        renderContextMeta(lastContext);
+        return;
+      }
+      renderContextMeta();
+    }
+
+    function createFactRow(key, value) {
+      const row = document.createElement('div');
+      const term = document.createElement('dt');
+      const description = document.createElement('dd');
+      if (key) {
+        term.textContent = key;
+      } else {
+        row.className = 'fact-empty';
+        term.className = 'visually-hidden';
+        term.textContent = 'Статус';
+      }
+      description.textContent = value;
+      row.append(term, description);
+      return row;
+    }
+
+    function setSending(value) {
+      isSending = value;
+      updateButtonState();
+      if (value) {
+        setStatus('Агент отвечает', 'busy');
+      }
+    }
+
+    function updateButtonState() {
+      button.disabled = isSending || input.value.trim() === '';
+    }
+
+    function resizeInput() {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 170) + 'px';
+    }
+
+    function renderMarkdown(text) {
+      const root = document.createDocumentFragment();
+      const lines = String(text || '').replace(/\r\n?/g, '\n').split('\n');
+      let index = 0;
+
+      while (index < lines.length) {
+        const line = lines[index];
+        if (line.trim() === '') {
+          index++;
+          continue;
+        }
+
+        if (isFenceLine(line)) {
+          const codeLines = [];
+          index++;
+          while (index < lines.length && !isFenceLine(lines[index])) {
+            codeLines.push(lines[index]);
+            index++;
+          }
+          if (index < lines.length) {
+            index++;
+          }
+          root.append(createCodeBlock(codeLines.join('\n')));
+          continue;
+        }
+
+        const unordered = listMatch(line, false);
+        if (unordered) {
+          const list = document.createElement('ul');
+          while (index < lines.length) {
+            const match = listMatch(lines[index], false);
+            if (!match) {
+              break;
+            }
+            const item = document.createElement('li');
+            appendInline(item, match);
+            list.append(item);
+            index++;
+          }
+          root.append(list);
+          continue;
+        }
+
+        const ordered = listMatch(line, true);
+        if (ordered) {
+          const list = document.createElement('ol');
+          while (index < lines.length) {
+            const match = listMatch(lines[index], true);
+            if (!match) {
+              break;
+            }
+            const item = document.createElement('li');
+            appendInline(item, match);
+            list.append(item);
+            index++;
+          }
+          root.append(list);
+          continue;
+        }
+
+        const paragraph = [];
+        while (index < lines.length && lines[index].trim() !== '' && !isFenceLine(lines[index]) && !listMatch(lines[index], false) && !listMatch(lines[index], true)) {
+          paragraph.push(lines[index]);
+          index++;
+        }
+        const p = document.createElement('p');
+        appendInline(p, paragraph.join('\n'));
+        root.append(p);
+      }
+
+      if (!root.childNodes.length) {
+        root.append(document.createTextNode(''));
+      }
+      return root;
+    }
+
+    function isFenceLine(line) {
+      return line.trim().startsWith(CODE_FENCE);
+    }
+
+    function listMatch(line, ordered) {
+      const pattern = ordered ? /^\s*\d+[.)]\s+(.+)$/ : /^\s*[-*]\s+(.+)$/;
+      const match = line.match(pattern);
+      return match ? match[1] : null;
+    }
+
+    function createCodeBlock(code) {
+      const pre = document.createElement('pre');
+      const codeElement = document.createElement('code');
+      codeElement.textContent = code;
+      pre.append(codeElement);
+      return pre;
+    }
+
+    function appendInline(parent, source) {
+      let position = 0;
+      const value = String(source || '');
+
+      while (position < value.length) {
+        const token = nextInlineToken(value, position);
+        if (!token) {
+          parent.append(document.createTextNode(value.slice(position)));
+          break;
+        }
+        if (token.start > position) {
+          parent.append(document.createTextNode(value.slice(position, token.start)));
+        }
+
+        if (token.type === 'code') {
+          const code = document.createElement('code');
+          code.textContent = token.content;
+          parent.append(code);
+        } else if (token.type === 'strong') {
+          const strong = document.createElement('strong');
+          appendInline(strong, token.content);
+          parent.append(strong);
+        } else if (token.type === 'em') {
+          const em = document.createElement('em');
+          appendInline(em, token.content);
+          parent.append(em);
+        } else if (token.type === 'link') {
+          const href = safeHref(token.href);
+          if (href) {
+            const link = document.createElement('a');
+            link.href = href;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            appendInline(link, token.label);
+            parent.append(link);
+          } else {
+            parent.append(document.createTextNode(token.label + ' (' + token.href + ')'));
+          }
+        }
+
+        position = token.end;
+      }
+    }
+
+    function nextInlineToken(value, start) {
+      const candidates = [
+        findCodeToken(value, start),
+        findStrongToken(value, start),
+        findLinkToken(value, start),
+        findEmToken(value, start),
+      ].filter(Boolean);
+
+      candidates.sort((left, right) => left.start - right.start);
+      return candidates[0] || null;
+    }
+
+    function findCodeToken(value, start) {
+      const open = value.indexOf(TICK, start);
+      if (open === -1) {
+        return null;
+      }
+      const close = value.indexOf(TICK, open + 1);
+      if (close === -1) {
+        return null;
+      }
+      return {type: 'code', start: open, end: close + 1, content: value.slice(open + 1, close)};
+    }
+
+    function findStrongToken(value, start) {
+      const open = value.indexOf('**', start);
+      if (open === -1) {
+        return null;
+      }
+      const close = value.indexOf('**', open + 2);
+      if (close === -1 || close === open + 2) {
+        return null;
+      }
+      return {type: 'strong', start: open, end: close + 2, content: value.slice(open + 2, close)};
+    }
+
+    function findEmToken(value, start) {
+      let open = value.indexOf('*', start);
+      while (open !== -1 && (value[open - 1] === '*' || value[open + 1] === '*')) {
+        open = value.indexOf('*', open + 1);
+      }
+      if (open === -1) {
+        return null;
+      }
+      let close = value.indexOf('*', open + 1);
+      while (close !== -1 && (value[close - 1] === '*' || value[close + 1] === '*')) {
+        close = value.indexOf('*', close + 1);
+      }
+      if (close === -1 || close === open + 1) {
+        return null;
+      }
+      return {type: 'em', start: open, end: close + 1, content: value.slice(open + 1, close)};
+    }
+
+    function findLinkToken(value, start) {
+      const open = value.indexOf('[', start);
+      if (open === -1) {
+        return null;
+      }
+      const closeLabel = value.indexOf(']', open + 1);
+      if (closeLabel === -1 || value[closeLabel + 1] !== '(') {
+        return null;
+      }
+      const closeHref = value.indexOf(')', closeLabel + 2);
+      if (closeHref === -1) {
+        return null;
+      }
+      const label = value.slice(open + 1, closeLabel);
+      const href = value.slice(closeLabel + 2, closeHref).trim();
+      if (!label || !href) {
+        return null;
+      }
+      return {type: 'link', start: open, end: closeHref + 1, label, href};
+    }
+
+    function safeHref(href) {
+      try {
+        const url = new URL(href, window.location.origin);
+        if (url.protocol === 'http:' || url.protocol === 'https:' || url.protocol === 'mailto:') {
+          return url.href;
+        }
+      } catch (error) {
+        return null;
+      }
+      return null;
+    }
+
+    settingsToggle.addEventListener('click', toggleSettings);
+    settingsClose.addEventListener('click', closeSettings);
+
+    document.addEventListener('click', (event) => {
+      if (!settingsMenu.hidden && !settingsWrap.contains(event.target)) {
+        closeSettings();
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !settingsMenu.hidden) {
+        closeSettings();
+        settingsToggle.focus();
+      }
+    });
+
+    input.addEventListener('input', () => {
+      resizeInput();
+      updateButtonState();
+    });
+
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        if (!isSending && input.value.trim() !== '') {
+          form.requestSubmit();
+        }
+      }
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const text = input.value.trim();
+      if (!text || isSending) {
+        return;
+      }
+
+      addMessage('user', text);
+      input.value = '';
+      resizeInput();
+      input.focus();
+      setSending(true);
+      const typing = addTypingMessage();
+
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({message: text}),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Ошибка запроса');
+        }
+        typing.remove();
+        addMessage('agent', data.content || '');
+        renderContextMeta(data.context);
+        await loadPanels();
+        setStatus('Готов');
+      } catch (error) {
+        typing.remove();
+        addMessage('agent', error.message, true);
+        setStatus('Ошибка', 'error');
+      } finally {
+        setSending(false);
+        input.focus();
+      }
+    });
+
+    resizeInput();
+    updateButtonState();
+    strategySelect.addEventListener('change', () => {
+      lastContext = null;
+      updateStrategyControls();
+      renderContextMeta();
+      queueSaveSettings();
+    });
+    windowInput.addEventListener('input', () => {
+      renderContextMeta();
+      queueSaveSettings(350);
+    });
+    windowInput.addEventListener('change', () => {
+      renderContextMeta();
+      queueSaveSettings();
+    });
+    checkpointButton.addEventListener('click', checkpointBranch);
+    createBranchButton.addEventListener('click', createBranch);
+    factsToggle.addEventListener('click', () => {
+      factsPanelExpanded = !factsPanelExpanded;
+      factsPanelUserToggled = true;
+      updateFactsPanelState();
+    });
+    branchTitleInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        createBranch();
+      }
+    });
+    loadSettings();
+  </script>
+</body>
+</html>
