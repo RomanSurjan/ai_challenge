@@ -1,23 +1,24 @@
 # Day 9: управление контекстом через сжатие истории
 
-`day-9` показывает учебный прием для длинных диалогов: агент хранит полную историю всегда, но в запрос к модели отправляет не всю историю, а `summary + последние сообщения`.
+`day-9` показывает учебный прием для длинных диалогов: агент заменяет старую часть диалога на `summary`, а на диске хранит только `summary.json` и свежий хвост сообщений в `history.json`.
 
 Есть два режима:
 
-- без сжатия: `system + full history + current user message`;
+- без сжатия: `system + full history + current user message`, а `history.json` растет как обычная полная история;
 - со сжатием: `system + summary + recent history + current user message`.
 
-Полная история не удаляется и остается в `history.json`. Summary хранится отдельно в `summary.json`.
+При включенной compression старая часть диалога после успешной суммаризации и ответа удаляется из `history.json`. В файле остаются только сообщения, еще не покрытые summary: старый pending block, последние `KeepLastMessages` и новый сохраненный turn. Summary хранится отдельно в `summary.json`.
 
 ## Главное правило
 
 Сжатие запускается не от размера token budget и не от `-context-limit`. Оно запускается только от количества сообщений в истории.
 
-Формула:
+Концептуальная формула:
 
 ```go
-targetCovered = len(history) - KeepLastMessages
-newBlock = history[summary.CoveredMessages : targetCovered]
+totalMessages = compactedMessages + len(history)
+targetCovered = totalMessages - KeepLastMessages
+newBlock = storedHistory[summary.CoveredMessages-compactedMessages : targetCovered-compactedMessages]
 
 if len(newBlock) >= ChunkSize {
 	update summary
@@ -30,7 +31,8 @@ if len(newBlock) >= ChunkSize {
 
 - `KeepLastMessages` - сколько последних сообщений истории всегда остаются в prompt дословно;
 - `ChunkSize` - минимальный размер старого непокрытого блока, после которого можно обновить summary;
-- `SummaryCoversMessages` - сколько первых сообщений истории уже заменены summary;
+- `SummaryCoversMessages` - сколько сообщений от начала диалога уже заменены summary;
+- `compactedMessages` - сколько summary-covered сообщений уже физически удалено из `history.json`;
 - `PendingMessages` / `old messages waiting for summary` - старые сообщения между уже покрытой summary частью и окном последних `KeepLastMessages`; они временно идут в prompt дословно и ждут следующего summary chunk;
 - `MessagesUntilSummaryUpdate` - сколько новых сообщений должно накопиться, чтобы блок достиг `ChunkSize`.
 
@@ -43,6 +45,8 @@ len(newBlock) = 2
 ```
 
 Summary не обновляется, потому что 2 сообщения меньше chunk size 10. До следующего обновления нужно еще 8 сообщений.
+
+Когда summary успешно обновилась и основной chat response сохранен, storage compaction удаляет из `history.json` сообщения, которые уже покрыты summary. Если summary update failed или pending block меньше `ChunkSize`, `history.json` не обрезается.
 
 ## Что попадает в prompt
 
@@ -58,6 +62,8 @@ current user message
 
 Важно: `old messages waiting for summary` тоже временно отправляются как есть. Они станут частью summary только когда накопится полный chunk.
 
+`POST /api/context/prepare` может заранее обновить `summary.json`, но сам по себе не обрезает `history.json`. Обрезка применяется после успешного `/api/chat`, когда новый `user + assistant` turn уже сохранен.
+
 По умолчанию summary собирает `APISummarizer`: это отдельный OpenAI-compatible запрос `POST /chat/completions` к той же DeepSeek-инфраструктуре, с тем же base URL, API key, моделью и HTTP client, что и основной chat. Prompt суммаризации просит связно сохранить факты, решения, ограничения, цели, текущий статус, предпочтения и незавершенные задачи, учитывая existing summary и новый блок сообщений. Он также запрещает выдумывать детали, пересказывать каждую реплику и возвращать markdown-заголовки или служебные пояснения.
 
 Demo-режимы и unit-тесты используют fake transport или локальный `LocalSummarySummarizer`, чтобы не ходить в реальный API.
@@ -71,7 +77,8 @@ CLI, web UI и `POST /api/chat` возвращают подробный `compres
 ```text
 Compression report:
   mode:                       enabled
-  total history messages:     18
+  total history messages:     8
+  compacted history messages: 10
   summary covers:             10 messages
   recent messages kept:       6
   old messages waiting for summary: 2
@@ -130,7 +137,8 @@ saving status:              summary exists, but compressed prompt is not shorter
 4. агент выбирает actual prompt: полный prompt или `summary + recent`;
 5. агент считает `actual prompt input`;
 6. только после этого агент проверяет `actual prompt input` против `context-limit`;
-7. если actual prompt помещается, основной chat request отправляется в API.
+7. если actual prompt помещается, основной chat request отправляется в API;
+8. после успешного ответа агент сохраняет assistant answer и обрезает `history.json` до несжатого хвоста, если summary уже покрывает старую часть.
 
 Так можно увидеть пользу compression: полный prompt мог бы быть больше лимита, но actual prompt после summary помещается.
 
@@ -239,9 +247,13 @@ http://localhost:8080
 
 `POST /api/context/prepare` можно вызвать перед chat: если старый блок достиг `summary-chunk-size`, он обновит summary и вернет свежий `compression_report`. Если frontend не вызовет prepare, `/api/chat` выполнит ту же подготовку сам до основного запроса к модели. `GET /api/compression-report` только читает состояние и не обновляет summary.
 
+Важно: `prepare` не удаляет сообщения из `history.json`; storage compaction выполняется только после успешного `/api/chat`, чтобы текущий turn не потерялся при ошибке ответа.
+
 В `compression_report` есть поля:
 
 - `total_history_messages`;
+- `compacted_history_messages`;
+- `storage_compacted`;
 - `summary_covers_messages`;
 - `recent_messages_kept`;
 - `pending_old_messages` - старые сообщения, ожидающие следующего summary chunk;
@@ -263,7 +275,7 @@ http://localhost:8080
 ```bash
 GOCACHE=/private/tmp/ai_challenge_go_cache go test ./day-9
 GOCACHE=/private/tmp/ai_challenge_go_cache go run ./day-9 -demo-compression
-DEEPSEEK_API_KEY=test GOCACHE=/private/tmp/ai_challenge_go_cache go run ./day-9 -serve -addr :18080
+DEEPSEEK_API_KEY=test DAY9_HISTORY_PATH=/private/tmp/day9-storage-history.json DAY9_SUMMARY_PATH=/private/tmp/day9-storage-summary.json GOCACHE=/private/tmp/ai_challenge_go_cache go run ./day-9 -serve -addr :18080
 ```
 
 Обычный `go test ./day-9` тоже подходит, если системный Go cache доступен для записи.

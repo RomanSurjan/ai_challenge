@@ -129,8 +129,9 @@ func runCompressionDemo(w io.Writer, cfg CompressionDemoConfig) error {
 
 	fmt.Fprintln(w, "Scenario: compression")
 	fmt.Fprintln(w, "Formula:")
-	fmt.Fprintln(w, "  targetCovered = len(history) - KeepLastMessages")
-	fmt.Fprintln(w, "  newBlock = history[summary.CoveredMessages : targetCovered]")
+	fmt.Fprintln(w, "  totalMessages = compactedMessages + len(history)")
+	fmt.Fprintln(w, "  targetCovered = totalMessages - KeepLastMessages")
+	fmt.Fprintln(w, "  newBlock = storedHistory[summary.CoveredMessages-compactedMessages : targetCovered-compactedMessages]")
 	fmt.Fprintln(w, "  summary updates only when len(newBlock) >= ChunkSize")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Context-limit note:")
@@ -254,7 +255,7 @@ func buildCompressionDemoHistory(messages int) []chatMessage {
 	facts := []string{
 		"Меня зовут Роман, я прохожу AI challenge.",
 		"Цель дня 9 - научиться управлять длинной историей диалога.",
-		"Решение: полная история хранится отдельно и не удаляется.",
+		"Решение: history.json хранит summary-covered сообщения только до успешной storage compaction.",
 		"Ограничение: тесты не должны зависеть от реального API.",
 		"Важно сохранить последние сообщения дословно.",
 		"Summary должно заменить старую часть prompt.",

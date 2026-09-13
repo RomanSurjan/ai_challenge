@@ -1009,6 +1009,8 @@
       const rows = [
         ['mode', mode],
         ['total history messages', report.total_history_messages],
+        ['compacted history messages', report.compacted_history_messages || 0],
+        ['storage compacted', yesNo(report.storage_compacted)],
         ['summary covers', formatNumber(report.summary_covers_messages) + ' messages'],
         ['recent messages kept', formatNumber(report.recent_messages_kept) + ' messages'],
         ['old messages waiting for summary', formatNumber(report.pending_old_messages || report.pending_messages) + ' messages'],

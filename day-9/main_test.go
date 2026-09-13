@@ -158,6 +158,9 @@ func TestAgentAskUsesCompressedContextWhenEnabled(t *testing.T) {
 	if answer.CompressionReport.SummaryCoversMessages != 4 || answer.CompressionReport.RecentMessagesKept != 4 {
 		t.Fatalf("unexpected compression report: %+v", answer.CompressionReport)
 	}
+	if answer.CompressionReport.TotalHistoryMessages != 6 || !answer.CompressionReport.StorageCompacted || answer.CompressionReport.CompactedHistoryMessages != 4 {
+		t.Fatalf("compression report should describe compacted storage after answer, got: %+v", answer.CompressionReport)
+	}
 	want := []chatMessage{
 		{Role: "system", Content: "system message"},
 		{Role: "system", Content: summaryMessagePrefix + "\nu1/a1/u2/a2 уже обсуждены"},
@@ -175,8 +178,23 @@ func TestAgentAskUsesCompressedContextWhenEnabled(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load history: %v", err)
 	}
-	if len(savedHistory) != len(history)+2 {
-		t.Fatalf("full history should be preserved and extended, got %d messages", len(savedHistory))
+	wantSavedHistory := []chatMessage{
+		{Role: "user", Content: "u3"},
+		{Role: "assistant", Content: "a3"},
+		{Role: "user", Content: "u4"},
+		{Role: "assistant", Content: "a4"},
+		{Role: "user", Content: "current"},
+		{Role: "assistant", Content: "compressed ok"},
+	}
+	if !sameMessages(savedHistory, wantSavedHistory) {
+		t.Fatalf("history should be compacted to recent messages plus new turn:\n got: %+v\nwant: %+v", savedHistory, wantSavedHistory)
+	}
+	savedState, err := store.LoadState(context.Background())
+	if err != nil {
+		t.Fatalf("load history state: %v", err)
+	}
+	if savedState.CompactedMessages != 4 {
+		t.Fatalf("unexpected compacted message count: %+v", savedState)
 	}
 }
 
@@ -252,8 +270,19 @@ func TestAgentAskUpdatesSummaryWhenChunkIsReady(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load history: %v", err)
 	}
-	if len(savedHistory) != 14 {
-		t.Fatalf("full history should contain all messages, got %d", len(savedHistory))
+	wantSavedHistory := append(cloneMessages(history[8:]),
+		chatMessage{Role: "user", Content: "обнови summary"},
+		chatMessage{Role: "assistant", Content: "summary updated"},
+	)
+	if !sameMessages(savedHistory, wantSavedHistory) {
+		t.Fatalf("history should contain only uncovered recent messages and new turn:\n got: %+v\nwant: %+v", savedHistory, wantSavedHistory)
+	}
+	savedState, err := store.LoadState(context.Background())
+	if err != nil {
+		t.Fatalf("load history state: %v", err)
+	}
+	if savedState.CompactedMessages != 8 {
+		t.Fatalf("summary-covered messages should be removed from storage, got: %+v", savedState)
 	}
 }
 
@@ -306,6 +335,17 @@ func TestChatWithoutPrepareUpdatesSummaryBeforeBuildingPrompt(t *testing.T) {
 	}
 	if summary.CoveredMessages != 4 || !strings.Contains(summary.Summary, "Связная тестовая сводка") {
 		t.Fatalf("summary should be persisted before API call, got: %+v", summary)
+	}
+	savedHistory, err := store.Load(context.Background())
+	if err != nil {
+		t.Fatalf("load history: %v", err)
+	}
+	wantSavedHistory := append(cloneMessages(history[4:]),
+		chatMessage{Role: "user", Content: "current"},
+		chatMessage{Role: "assistant", Content: "ok"},
+	)
+	if !sameMessages(savedHistory, wantSavedHistory) {
+		t.Fatalf("chat without prepare should compact storage after answer:\n got: %+v\nwant: %+v", savedHistory, wantSavedHistory)
 	}
 }
 
@@ -443,6 +483,17 @@ func TestAPISummaryResultIsSavedAndUsedByCurrentChat(t *testing.T) {
 	if summary.CoveredMessages != 4 || summary.Summary != "Fresh fake API summary for current prompt." {
 		t.Fatalf("summary result should be persisted, got: %+v", summary)
 	}
+	savedHistory, err := store.Load(context.Background())
+	if err != nil {
+		t.Fatalf("load history: %v", err)
+	}
+	wantSavedHistory := append(cloneMessages(history[4:]),
+		chatMessage{Role: "user", Content: "current"},
+		chatMessage{Role: "assistant", Content: "chat ok"},
+	)
+	if !sameMessages(savedHistory, wantSavedHistory) {
+		t.Fatalf("history should be compacted after API summary is used:\n got: %+v\nwant: %+v", savedHistory, wantSavedHistory)
+	}
 }
 
 func TestPrepareSummaryFailurePreservesExistingSummaryAndHistory(t *testing.T) {
@@ -505,6 +556,105 @@ func TestPrepareSummaryFailurePreservesExistingSummaryAndHistory(t *testing.T) {
 	}
 	if !sameMessages(afterHistory, history) {
 		t.Fatalf("history should not change after summary failure:\n got: %+v\nwant: %+v", afterHistory, history)
+	}
+}
+
+func TestAgentAskDoesNotCompactWhenPendingBlockIsSmallerThanChunk(t *testing.T) {
+	dir := t.TempDir()
+	historyPath := filepath.Join(dir, "history.json")
+	summaryPath := filepath.Join(dir, "summary.json")
+	history := buildCompressionDemoHistory(7)
+	store := NewJSONMessageStore(historyPath)
+	if err := store.Save(context.Background(), history); err != nil {
+		t.Fatalf("save history: %v", err)
+	}
+	summaryStore := NewJSONSummaryStore(summaryPath)
+
+	client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		return response(http.StatusOK, `{"choices":[{"message":{"content":"ok"},"finish_reason":"stop"}]}`), nil
+	})}
+	agent := NewAgent(AgentConfig{
+		APIKey:  "test-key",
+		BaseURL: "https://example.test",
+		Timeout: time.Second,
+		Memory:  store,
+		Summary: summaryStore,
+		Compression: CompressionConfig{
+			Enabled:          true,
+			KeepLastMessages: 4,
+			ChunkSize:        4,
+			SummaryPath:      summaryPath,
+		},
+	}, client)
+
+	answer, err := agent.Ask(context.Background(), "current")
+	if err != nil {
+		t.Fatalf("Ask returned error: %v", err)
+	}
+	if answer.CompressionReport == nil || answer.CompressionReport.SummaryUpdateStatus != "ready" {
+		t.Fatalf("after the new turn the next summary update should be ready, got: %+v", answer.CompressionReport)
+	}
+	summary, err := summaryStore.Load(context.Background())
+	if err != nil {
+		t.Fatalf("load summary: %v", err)
+	}
+	if summary.CoveredMessages != 0 || summary.Summary != "" {
+		t.Fatalf("summary should not update before chunk is ready: %+v", summary)
+	}
+	savedHistory, err := store.Load(context.Background())
+	if err != nil {
+		t.Fatalf("load history: %v", err)
+	}
+	wantHistory := append(cloneMessages(history),
+		chatMessage{Role: "user", Content: "current"},
+		chatMessage{Role: "assistant", Content: "ok"},
+	)
+	if !sameMessages(savedHistory, wantHistory) {
+		t.Fatalf("history should not be compacted before summary covers old messages:\n got: %+v\nwant: %+v", savedHistory, wantHistory)
+	}
+}
+
+func TestAgentAskCompressionDisabledPreservesFullHistory(t *testing.T) {
+	dir := t.TempDir()
+	historyPath := filepath.Join(dir, "history.json")
+	history := buildCompressionDemoHistory(8)
+	store := NewJSONMessageStore(historyPath)
+	if err := store.Save(context.Background(), history); err != nil {
+		t.Fatalf("save history: %v", err)
+	}
+
+	client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		return response(http.StatusOK, `{"choices":[{"message":{"content":"ok"},"finish_reason":"stop"}]}`), nil
+	})}
+	agent := NewAgent(AgentConfig{
+		APIKey:  "test-key",
+		BaseURL: "https://example.test",
+		Timeout: time.Second,
+		Memory:  store,
+		Compression: CompressionConfig{
+			Enabled:          false,
+			KeepLastMessages: 4,
+			ChunkSize:        4,
+		},
+	}, client)
+
+	answer, err := agent.Ask(context.Background(), "current")
+	if err != nil {
+		t.Fatalf("Ask returned error: %v", err)
+	}
+	if answer.CompressionReport == nil || answer.CompressionReport.Mode != "disabled" {
+		t.Fatalf("expected disabled compression report, got: %+v", answer.CompressionReport)
+	}
+	savedHistory, err := store.Load(context.Background())
+	if err != nil {
+		t.Fatalf("load history: %v", err)
+	}
+	wantHistory := append(cloneMessages(history),
+		chatMessage{Role: "user", Content: "current"},
+		chatMessage{Role: "assistant", Content: "ok"},
+	)
+	if !sameMessages(savedHistory, wantHistory) {
+		t.Fatalf("compression disabled should preserve full history:\n got: %+v\nwant: %+v", savedHistory, wantHistory)
 	}
 }
 
@@ -647,6 +797,8 @@ func TestChatPageUsesSummaryUpdateLabelsAndWaitingForSummaryCopy(t *testing.T) {
 		"report.summary_update_status === 'ready'",
 		"prepared.compression_report.summary_update_status === 'updated'",
 		"report.summary_update_label || summaryUpdateLabel(report)",
+		"compacted history messages",
+		"storage compacted",
 		"Input",
 		"Output",
 		"Saved input",
@@ -1395,6 +1547,13 @@ func TestContextPrepareAPIUpdatesSummaryBeforeChat(t *testing.T) {
 	}
 	if summary.CoveredMessages != 4 {
 		t.Fatalf("prepare should persist summary before chat, got: %+v", summary)
+	}
+	historyAfterPrepare, err := store.Load(context.Background())
+	if err != nil {
+		t.Fatalf("load history: %v", err)
+	}
+	if !sameMessages(historyAfterPrepare, buildCompressionDemoHistory(8)) {
+		t.Fatalf("prepare should not compact storage before the chat turn is saved: %+v", historyAfterPrepare)
 	}
 }
 

@@ -342,6 +342,8 @@ func printCompressionReport(w io.Writer, report *CompressionReport) {
 	fmt.Fprintln(w, "\nCompression report:")
 	fmt.Fprintf(w, "  mode:                       %s\n", report.Mode)
 	fmt.Fprintf(w, "  total history messages:     %d\n", report.TotalHistoryMessages)
+	fmt.Fprintf(w, "  compacted history messages: %d\n", report.CompactedHistoryMessages)
+	fmt.Fprintf(w, "  storage compacted:          %s\n", yesNo(report.StorageCompacted))
 	fmt.Fprintf(w, "  summary covers:             %d messages\n", report.SummaryCoversMessages)
 	fmt.Fprintf(w, "  recent messages kept:       %d\n", report.RecentMessagesKept)
 	fmt.Fprintf(w, "  old messages waiting for summary: %d\n", report.PendingOldMessages)

@@ -15,6 +15,17 @@ type MessageStore interface {
 	Save(ctx context.Context, messages []chatMessage) error
 }
 
+type StoredHistory struct {
+	Messages          []chatMessage
+	CompactedMessages int
+}
+
+type CompactionAwareMessageStore interface {
+	MessageStore
+	LoadState(ctx context.Context) (StoredHistory, error)
+	SaveState(ctx context.Context, state StoredHistory) error
+}
+
 type ResettableMessageStore interface {
 	MessageStore
 	Reset(ctx context.Context) error
@@ -26,9 +37,10 @@ type JSONMessageStore struct {
 }
 
 type historyFile struct {
-	Version  int           `json:"version"`
-	Messages []chatMessage `json:"messages"`
-	Updated  time.Time     `json:"updated_at"`
+	Version           int           `json:"version"`
+	Messages          []chatMessage `json:"messages"`
+	CompactedMessages int           `json:"compacted_messages,omitempty"`
+	Updated           time.Time     `json:"updated_at"`
 }
 
 func NewJSONMessageStore(path string) *JSONMessageStore {
@@ -36,11 +48,19 @@ func NewJSONMessageStore(path string) *JSONMessageStore {
 }
 
 func (s *JSONMessageStore) Load(ctx context.Context) ([]chatMessage, error) {
+	state, err := s.LoadState(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return state.Messages, nil
+}
+
+func (s *JSONMessageStore) LoadState(ctx context.Context) (StoredHistory, error) {
 	if s == nil || s.path == "" {
-		return nil, nil
+		return StoredHistory{}, nil
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return StoredHistory{}, err
 	}
 
 	s.mu.Lock()
@@ -49,37 +69,50 @@ func (s *JSONMessageStore) Load(ctx context.Context) ([]chatMessage, error) {
 	data, err := os.ReadFile(s.path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, nil
+			return StoredHistory{}, nil
 		}
-		return nil, fmt.Errorf("не удалось прочитать историю: %w", err)
+		return StoredHistory{}, fmt.Errorf("не удалось прочитать историю: %w", err)
 	}
 	if len(data) == 0 {
-		return nil, nil
+		return StoredHistory{}, nil
 	}
 
 	var file historyFile
 	if err := json.Unmarshal(data, &file); err != nil {
-		return nil, fmt.Errorf("не удалось разобрать историю: %w", err)
+		return StoredHistory{}, fmt.Errorf("не удалось разобрать историю: %w", err)
 	}
 	if file.Version != 1 {
-		return nil, fmt.Errorf("неподдерживаемая версия истории: %d", file.Version)
+		return StoredHistory{}, fmt.Errorf("неподдерживаемая версия истории: %d", file.Version)
 	}
 	if err := validateMessages(file.Messages); err != nil {
-		return nil, fmt.Errorf("история содержит некорректные данные: %w", err)
+		return StoredHistory{}, fmt.Errorf("история содержит некорректные данные: %w", err)
+	}
+	if file.CompactedMessages < 0 {
+		return StoredHistory{}, fmt.Errorf("история содержит некорректное количество сжатых сообщений: %d", file.CompactedMessages)
 	}
 
-	return cloneMessages(file.Messages), nil
+	return StoredHistory{
+		Messages:          cloneMessages(file.Messages),
+		CompactedMessages: file.CompactedMessages,
+	}, nil
 }
 
 func (s *JSONMessageStore) Save(ctx context.Context, messages []chatMessage) error {
+	return s.SaveState(ctx, StoredHistory{Messages: messages})
+}
+
+func (s *JSONMessageStore) SaveState(ctx context.Context, state StoredHistory) error {
 	if s == nil || s.path == "" {
 		return nil
 	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if err := validateMessages(messages); err != nil {
+	if err := validateMessages(state.Messages); err != nil {
 		return err
+	}
+	if state.CompactedMessages < 0 {
+		return fmt.Errorf("история содержит некорректное количество сжатых сообщений: %d", state.CompactedMessages)
 	}
 
 	s.mu.Lock()
@@ -93,9 +126,10 @@ func (s *JSONMessageStore) Save(ctx context.Context, messages []chatMessage) err
 	}
 
 	file := historyFile{
-		Version:  1,
-		Messages: cloneMessages(messages),
-		Updated:  time.Now().UTC(),
+		Version:           1,
+		Messages:          cloneMessages(state.Messages),
+		CompactedMessages: state.CompactedMessages,
+		Updated:           time.Now().UTC(),
 	}
 	data, err := json.MarshalIndent(file, "", "  ")
 	if err != nil {

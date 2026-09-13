@@ -49,10 +49,13 @@ const compressionReportProbePrompt = ""
 
 type preparedContext struct {
 	History           []chatMessage
+	HistoryOffset     int
 	RequestMessages   []chatMessage
 	FullTokenReport   TokenReport
 	TokenReport       TokenReport
 	CompressionReport CompressionReport
+	Summary           ConversationSummary
+	SummaryUpdate     SummaryUpdateReport
 }
 
 type ContextPrepareError struct {
@@ -184,15 +187,20 @@ func (a *Agent) Ask(ctx context.Context, userPrompt string) (AgentResponse, erro
 		chatMessage{Role: "user", Content: userPrompt},
 		chatMessage{Role: "assistant", Content: answer},
 	)
-	if err := a.saveHistory(ctx, updatedHistory); err != nil {
+	storedHistory := a.compactHistoryForStorage(updatedHistory, prepared.HistoryOffset, prepared.Summary)
+	if err := a.saveStoredHistory(ctx, storedHistory); err != nil {
 		return AgentResponse{}, err
 	}
+	if a.cfg.Memory == nil {
+		storedHistory = StoredHistory{}
+	}
+	compressionReport := a.compressionReportAfterStorage(prepared, storedHistory)
 
 	return AgentResponse{
 		Content:           answer,
 		Usage:             decoded.Usage,
 		TokenReport:       tokenReport,
-		CompressionReport: &prepared.CompressionReport,
+		CompressionReport: &compressionReport,
 		FinishReason:      decoded.Choices[0].FinishReason,
 	}, nil
 }
@@ -254,21 +262,24 @@ func (a *Agent) PrepareContext(ctx context.Context, userPrompt string) (Compress
 }
 
 func (a *Agent) prepareContextLocked(ctx context.Context, userPrompt string, updateSummary bool) (preparedContext, error) {
-	history, err := a.loadHistory(ctx)
+	storedHistory, err := a.loadStoredHistory(ctx)
 	if err != nil {
 		return preparedContext{}, err
 	}
+	history := storedHistory.Messages
+	historyOffset := storedHistory.CompactedMessages
 
 	system := strings.TrimSpace(a.cfg.System)
 	fullMessages := a.buildMessages(userPrompt, history)
 	fullReport := EstimateChatTokenReport(fullMessages, a.cfg.ContextLimit, a.cfg.Pricing, a.cfg.Calibration)
 	tokenReport := fullReport
 	requestMessages := fullMessages
-	compressionReport := buildCompressionReport(false, fullReport, fullReport, ConversationSummary{}, a.cfg.Compression, len(history), SummaryUpdateReport{})
+	compressionReport := buildCompressionReportWithOffset(false, fullReport, fullReport, ConversationSummary{}, a.cfg.Compression, len(history), historyOffset, SummaryUpdateReport{})
 
 	if !a.cfg.Compression.Enabled {
 		return preparedContext{
 			History:           history,
+			HistoryOffset:     historyOffset,
 			RequestMessages:   requestMessages,
 			FullTokenReport:   fullReport,
 			TokenReport:       tokenReport,
@@ -282,20 +293,22 @@ func (a *Agent) prepareContextLocked(ctx context.Context, userPrompt string, upd
 	}
 	updateReport := SummaryUpdateReport{}
 	if updateSummary {
-		summary, updateReport, err = maybeUpdateSummary(ctx, history, summary, a.cfg.Compression, a.cfg.Summary, a.cfg.Summarizer)
+		summary, updateReport, err = maybeUpdateSummaryWithOffset(ctx, history, historyOffset, summary, a.cfg.Compression, a.cfg.Summary, a.cfg.Summarizer)
 		if err != nil {
-			compressedContext := buildCompressedContext(system, history, userPrompt, summary, a.cfg.Compression, a.cfg.Pricing, a.cfg.Calibration)
+			compressedContext := buildCompressedContextWithOffset(system, history, historyOffset, userPrompt, summary, a.cfg.Compression, a.cfg.Pricing, a.cfg.Calibration)
 			tokenReport = EstimateChatTokenReport(compressedContext.Messages, a.cfg.ContextLimit, a.cfg.Pricing, a.cfg.Calibration)
-			compressionReport = buildCompressionReport(true, fullReport, tokenReport, compressedContext.Summary, a.cfg.Compression, len(history), SummaryUpdateReport{
+			compressionReport = buildCompressionReportWithOffset(true, fullReport, tokenReport, compressedContext.Summary, a.cfg.Compression, len(history), historyOffset, SummaryUpdateReport{
 				Reason: fmt.Sprintf("summary update failed: %v", err),
 				Status: "failed",
 			})
 			return preparedContext{
 					History:           history,
+					HistoryOffset:     historyOffset,
 					RequestMessages:   compressedContext.Messages,
 					FullTokenReport:   fullReport,
 					TokenReport:       tokenReport,
 					CompressionReport: compressionReport,
+					Summary:           summary,
 				}, &ContextPrepareError{
 					Err:               fmt.Errorf("не удалось обновить summary: %w", err),
 					CompressionReport: &compressionReport,
@@ -303,16 +316,19 @@ func (a *Agent) prepareContextLocked(ctx context.Context, userPrompt string, upd
 		}
 	}
 
-	compressedContext := buildCompressedContext(system, history, userPrompt, summary, a.cfg.Compression, a.cfg.Pricing, a.cfg.Calibration)
+	compressedContext := buildCompressedContextWithOffset(system, history, historyOffset, userPrompt, summary, a.cfg.Compression, a.cfg.Pricing, a.cfg.Calibration)
 	requestMessages = compressedContext.Messages
 	tokenReport = EstimateChatTokenReport(requestMessages, a.cfg.ContextLimit, a.cfg.Pricing, a.cfg.Calibration)
-	compressionReport = buildCompressionReport(true, fullReport, tokenReport, compressedContext.Summary, a.cfg.Compression, len(history), updateReport)
+	compressionReport = buildCompressionReportWithOffset(true, fullReport, tokenReport, compressedContext.Summary, a.cfg.Compression, len(history), historyOffset, updateReport)
 	return preparedContext{
 		History:           history,
+		HistoryOffset:     historyOffset,
 		RequestMessages:   requestMessages,
 		FullTokenReport:   fullReport,
 		TokenReport:       tokenReport,
 		CompressionReport: compressionReport,
+		Summary:           summary,
+		SummaryUpdate:     updateReport,
 	}, nil
 }
 
@@ -343,14 +359,11 @@ func (a *Agent) ResetSummary(ctx context.Context) error {
 }
 
 func (a *Agent) loadHistory(ctx context.Context) ([]chatMessage, error) {
-	if a.cfg.Memory == nil {
-		return nil, nil
-	}
-	messages, err := a.cfg.Memory.Load(ctx)
+	stored, err := a.loadStoredHistory(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return cloneMessages(messages), nil
+	return stored.Messages, nil
 }
 
 func (a *Agent) saveHistory(ctx context.Context, messages []chatMessage) error {
@@ -361,6 +374,92 @@ func (a *Agent) saveHistory(ctx context.Context, messages []chatMessage) error {
 		return fmt.Errorf("не удалось сохранить историю: %w", err)
 	}
 	return nil
+}
+
+func (a *Agent) loadStoredHistory(ctx context.Context) (StoredHistory, error) {
+	if a.cfg.Memory == nil {
+		return StoredHistory{}, nil
+	}
+	if store, ok := a.cfg.Memory.(CompactionAwareMessageStore); ok {
+		state, err := store.LoadState(ctx)
+		if err != nil {
+			return StoredHistory{}, err
+		}
+		state.Messages = cloneMessages(state.Messages)
+		if state.CompactedMessages < 0 {
+			state.CompactedMessages = 0
+		}
+		return state, nil
+	}
+	messages, err := a.cfg.Memory.Load(ctx)
+	if err != nil {
+		return StoredHistory{}, err
+	}
+	return StoredHistory{Messages: cloneMessages(messages)}, nil
+}
+
+func (a *Agent) saveStoredHistory(ctx context.Context, state StoredHistory) error {
+	if a.cfg.Memory == nil {
+		return nil
+	}
+	if err := validateMessages(state.Messages); err != nil {
+		return err
+	}
+	if state.CompactedMessages < 0 {
+		state.CompactedMessages = 0
+	}
+	if store, ok := a.cfg.Memory.(CompactionAwareMessageStore); ok {
+		if err := store.SaveState(ctx, state); err != nil {
+			return fmt.Errorf("не удалось сохранить историю: %w", err)
+		}
+		return nil
+	}
+	return a.saveHistory(ctx, state.Messages)
+}
+
+func (a *Agent) compactHistoryForStorage(messages []chatMessage, compactedMessages int, summary ConversationSummary) StoredHistory {
+	state := StoredHistory{
+		Messages:          cloneMessages(messages),
+		CompactedMessages: maxInt(0, compactedMessages),
+	}
+	if !a.cfg.Compression.Enabled {
+		return state
+	}
+	summary = normalizeSummaryForStorage(summary, state.CompactedMessages+len(state.Messages))
+	if strings.TrimSpace(summary.Summary) == "" || summary.CoveredMessages <= state.CompactedMessages {
+		return state
+	}
+	remove := coveredMessagesInStorage(summary, state.CompactedMessages, len(state.Messages))
+	if remove <= 0 {
+		return state
+	}
+	state.Messages = cloneMessages(state.Messages[remove:])
+	state.CompactedMessages += remove
+	return state
+}
+
+func (a *Agent) compressionReportAfterStorage(prepared preparedContext, stored StoredHistory) CompressionReport {
+	if !a.cfg.Compression.Enabled {
+		report := prepared.CompressionReport
+		report.TotalHistoryMessages = len(stored.Messages)
+		report.CompactedHistoryMessages = stored.CompactedMessages
+		report.StorageCompacted = stored.CompactedMessages > 0
+		return report
+	}
+	update := prepared.SummaryUpdate
+	if !update.Updated && update.Status != "failed" && update.Status != "updated" {
+		update = SummaryUpdateReport{}
+	}
+	return buildCompressionReportWithOffset(
+		true,
+		prepared.FullTokenReport,
+		prepared.TokenReport,
+		prepared.Summary,
+		a.cfg.Compression,
+		len(stored.Messages),
+		stored.CompactedMessages,
+		update,
+	)
 }
 
 func (a *Agent) loadSummary(ctx context.Context) (ConversationSummary, error) {
@@ -382,7 +481,7 @@ func (a *Agent) updateSummary(ctx context.Context, messages []chatMessage) (Conv
 	if err != nil {
 		return ConversationSummary{}, err
 	}
-	updated, _, err := maybeUpdateSummary(ctx, messages, summary, a.cfg.Compression, a.cfg.Summary, a.cfg.Summarizer)
+	updated, _, err := maybeUpdateSummaryWithOffset(ctx, messages, 0, summary, a.cfg.Compression, a.cfg.Summary, a.cfg.Summarizer)
 	return updated, err
 }
 

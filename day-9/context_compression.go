@@ -87,6 +87,8 @@ type CompressionReport struct {
 	Enabled                    bool    `json:"enabled"`
 	Mode                       string  `json:"mode"`
 	TotalHistoryMessages       int     `json:"total_history_messages"`
+	CompactedHistoryMessages   int     `json:"compacted_history_messages"`
+	StorageCompacted           bool    `json:"storage_compacted"`
 	KeepLastMessages           int     `json:"keep_last_messages"`
 	ChunkSize                  int     `json:"chunk_size"`
 	FullPromptInputTokens      int     `json:"full_prompt_input_tokens"`
@@ -395,7 +397,7 @@ func (s LocalSummarySummarizer) Summarize(ctx context.Context, existing Conversa
 	if len(contextItems) > 0 {
 		paragraphs = append(paragraphs, "Дополнительный контекст: "+joinSummaryItems(contextItems)+".")
 	}
-	paragraphs = append(paragraphs, "Важно: prompt получает summary, старые сообщения, которые еще ждут следующего summary chunk, последние сообщения и текущий запрос; полная история остается отдельно.")
+	paragraphs = append(paragraphs, "Важно: prompt получает summary, старые сообщения, которые еще ждут следующего summary chunk, последние сообщения и текущий запрос; history.json хранит только несжатый хвост.")
 
 	return strings.TrimSpace(strings.Join(paragraphs, "\n\n")), nil
 }
@@ -455,11 +457,15 @@ func joinSummaryItems(items []string) string {
 }
 
 func buildCompressedContext(system string, history []chatMessage, userPrompt string, summary ConversationSummary, cfg CompressionConfig, pricing TokenPricing, calibration TokenCalibration) CompressedContext {
+	return buildCompressedContextWithOffset(system, history, 0, userPrompt, summary, cfg, pricing, calibration)
+}
+
+func buildCompressedContextWithOffset(system string, history []chatMessage, compactedMessages int, userPrompt string, summary ConversationSummary, cfg CompressionConfig, pricing TokenPricing, calibration TokenCalibration) CompressedContext {
 	cfg = normalizeCompressionConfig(cfg)
-	summary = normalizeSummaryForHistory(summary, len(history))
+	summary = normalizeSummaryForStorage(summary, compactedMessages+len(history))
 
 	fullMessages := buildChatMessages(system, history, userPrompt)
-	compressedHistory := buildCompressedHistory(history, summary)
+	compressedHistory := buildCompressedHistoryWithOffset(history, compactedMessages, summary)
 	compressedMessages := buildChatMessages(system, compressedHistory, userPrompt)
 
 	fullReport := EstimateChatTokenReport(fullMessages, 0, pricing, calibration)
@@ -479,15 +485,20 @@ func buildCompressedContext(system string, history []chatMessage, userPrompt str
 }
 
 func buildCompressedHistory(history []chatMessage, summary ConversationSummary) []chatMessage {
-	summary = normalizeSummaryForHistory(summary, len(history))
-	messages := make([]chatMessage, 0, len(history)-summary.CoveredMessages+1)
+	return buildCompressedHistoryWithOffset(history, 0, summary)
+}
+
+func buildCompressedHistoryWithOffset(history []chatMessage, compactedMessages int, summary ConversationSummary) []chatMessage {
+	summary = normalizeSummaryForStorage(summary, compactedMessages+len(history))
+	coveredStoredMessages := coveredMessagesInStorage(summary, compactedMessages, len(history))
+	messages := make([]chatMessage, 0, len(history)-coveredStoredMessages+1)
 	if strings.TrimSpace(summary.Summary) != "" && summary.CoveredMessages > 0 {
 		messages = append(messages, chatMessage{
 			Role:    "system",
 			Content: summaryMessagePrefix + "\n" + strings.TrimSpace(summary.Summary),
 		})
 	}
-	messages = append(messages, history[summary.CoveredMessages:]...)
+	messages = append(messages, history[coveredStoredMessages:]...)
 	return messages
 }
 
@@ -503,8 +514,16 @@ func buildChatMessages(system string, history []chatMessage, userPrompt string) 
 }
 
 func buildCompressionReport(enabled bool, fullReport TokenReport, actualReport TokenReport, summary ConversationSummary, cfg CompressionConfig, historyLen int, update SummaryUpdateReport) CompressionReport {
+	return buildCompressionReportWithOffset(enabled, fullReport, actualReport, summary, cfg, historyLen, 0, update)
+}
+
+func buildCompressionReportWithOffset(enabled bool, fullReport TokenReport, actualReport TokenReport, summary ConversationSummary, cfg CompressionConfig, historyLen int, compactedMessages int, update SummaryUpdateReport) CompressionReport {
 	cfg = normalizeCompressionConfig(cfg)
-	summary = normalizeSummaryForHistory(summary, historyLen)
+	if compactedMessages < 0 {
+		compactedMessages = 0
+	}
+	totalConversationMessages := compactedMessages + historyLen
+	summary = normalizeSummaryForStorage(summary, totalConversationMessages)
 
 	actualInput := fullReport.PromptTokens
 	if enabled {
@@ -523,13 +542,14 @@ func buildCompressionReport(enabled bool, fullReport TokenReport, actualReport T
 	if enabled {
 		mode = "enabled"
 	}
-	targetCovered := targetCoveredMessages(historyLen, cfg)
-	pendingOldMessages := maxInt(0, targetCovered-summary.CoveredMessages)
-	recentMessagesKept := minInt(cfg.KeepLastMessages, maxInt(0, historyLen-summary.CoveredMessages-pendingOldMessages))
-	summaryUpdateStatus, messagesUntilSummaryUpdate, summaryUpdateLabel := summaryUpdateState(enabled, summary, cfg, historyLen, pendingOldMessages, update)
+	targetCovered := targetCoveredMessages(totalConversationMessages, cfg)
+	availableCoveredFloor := maxInt(summary.CoveredMessages, compactedMessages)
+	pendingOldMessages := maxInt(0, targetCovered-availableCoveredFloor)
+	recentMessagesKept := minInt(cfg.KeepLastMessages, maxInt(0, totalConversationMessages-availableCoveredFloor-pendingOldMessages))
+	summaryUpdateStatus, messagesUntilSummaryUpdate, summaryUpdateLabel := summaryUpdateState(enabled, summary, cfg, totalConversationMessages, pendingOldMessages, update)
 	reason := strings.TrimSpace(update.Reason)
 	if reason == "" {
-		reason = compressionReason(enabled, summary, cfg, historyLen, pendingOldMessages)
+		reason = compressionReason(enabled, summary, cfg, totalConversationMessages, pendingOldMessages)
 	}
 	savingStatus := compressionSavingStatus(enabled, summary, saved)
 	contextLimitStatus := compressionContextLimitStatus(actualReport)
@@ -538,6 +558,8 @@ func buildCompressionReport(enabled bool, fullReport TokenReport, actualReport T
 		Enabled:                    enabled,
 		Mode:                       mode,
 		TotalHistoryMessages:       historyLen,
+		CompactedHistoryMessages:   compactedMessages,
+		StorageCompacted:           compactedMessages > 0,
 		KeepLastMessages:           cfg.KeepLastMessages,
 		ChunkSize:                  cfg.ChunkSize,
 		FullPromptInputTokens:      fullReport.PromptTokens,
@@ -567,24 +589,42 @@ func buildCompressionReport(enabled bool, fullReport TokenReport, actualReport T
 }
 
 func maybeUpdateSummary(ctx context.Context, history []chatMessage, summary ConversationSummary, cfg CompressionConfig, store SummaryStore, summarizer Summarizer) (ConversationSummary, SummaryUpdateReport, error) {
+	return maybeUpdateSummaryWithOffset(ctx, history, 0, summary, cfg, store, summarizer)
+}
+
+func maybeUpdateSummaryWithOffset(ctx context.Context, history []chatMessage, compactedMessages int, summary ConversationSummary, cfg CompressionConfig, store SummaryStore, summarizer Summarizer) (ConversationSummary, SummaryUpdateReport, error) {
 	if !cfg.Enabled || store == nil {
 		return summary, SummaryUpdateReport{Reason: "compression is disabled", Status: "disabled"}, nil
 	}
 	cfg = normalizeCompressionConfig(cfg)
-	summary = normalizeSummaryForHistory(summary, len(history))
-
-	targetCovered := targetCoveredMessages(len(history), cfg)
-	if targetCovered <= summary.CoveredMessages {
-		return summary, SummaryUpdateReport{Reason: compressionReason(true, summary, cfg, len(history), 0), Status: "not_needed"}, nil
+	if compactedMessages < 0 {
+		compactedMessages = 0
 	}
-	if targetCovered-summary.CoveredMessages < cfg.ChunkSize {
+	totalConversationMessages := compactedMessages + len(history)
+	summary = normalizeSummaryForStorage(summary, totalConversationMessages)
+
+	targetCovered := targetCoveredMessages(totalConversationMessages, cfg)
+	availableCoveredFloor := maxInt(summary.CoveredMessages, compactedMessages)
+	if targetCovered <= availableCoveredFloor {
+		return summary, SummaryUpdateReport{Reason: compressionReason(true, summary, cfg, totalConversationMessages, 0), Status: "not_needed"}, nil
+	}
+	pendingMessages := targetCovered - availableCoveredFloor
+	if pendingMessages < cfg.ChunkSize {
 		return summary, SummaryUpdateReport{Reason: "pending block is smaller than summary chunk size", Status: "waiting"}, nil
 	}
 	if summarizer == nil {
 		summarizer = LocalSummarySummarizer{}
 	}
 
-	block := cloneMessages(history[summary.CoveredMessages:targetCovered])
+	start := availableCoveredFloor - compactedMessages
+	end := targetCovered - compactedMessages
+	if start < 0 {
+		start = 0
+	}
+	if end > len(history) {
+		end = len(history)
+	}
+	block := cloneMessages(history[start:end])
 	newlyCompressed := len(block)
 	text, err := summarizer.Summarize(ctx, summary, block)
 	if err != nil {
@@ -637,16 +677,34 @@ func summaryUpdateState(enabled bool, summary ConversationSummary, cfg Compressi
 }
 
 func normalizeSummaryForHistory(summary ConversationSummary, historyLen int) ConversationSummary {
+	return normalizeSummaryForStorage(summary, historyLen)
+}
+
+func normalizeSummaryForStorage(summary ConversationSummary, totalConversationMessages int) ConversationSummary {
 	if summary.CoveredMessages < 0 {
 		summary.CoveredMessages = 0
 	}
-	if summary.CoveredMessages > historyLen {
-		summary.CoveredMessages = historyLen
+	if totalConversationMessages >= 0 && summary.CoveredMessages > totalConversationMessages {
+		summary.CoveredMessages = totalConversationMessages
 	}
 	if strings.TrimSpace(summary.Summary) == "" {
 		summary.CoveredMessages = 0
 	}
 	return summary
+}
+
+func coveredMessagesInStorage(summary ConversationSummary, compactedMessages int, historyLen int) int {
+	if compactedMessages < 0 {
+		compactedMessages = 0
+	}
+	covered := summary.CoveredMessages - compactedMessages
+	if covered < 0 {
+		return 0
+	}
+	if covered > historyLen {
+		return historyLen
+	}
+	return covered
 }
 
 func targetCoveredMessages(historyLen int, cfg CompressionConfig) int {
