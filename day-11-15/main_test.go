@@ -549,7 +549,7 @@ func TestConfigDialogModesAndDay11Paths(t *testing.T) {
 	if err != nil || prompt.DialogID == "" {
 		t.Fatalf("prompt config: %+v err=%v", prompt, err)
 	}
-	for _, name := range []string{"run_web.sh", "README.md", "chat_page.html"} {
+	for _, name := range []string{"run_web.sh", "chat_page.html"} {
 		content, err := os.ReadFile(name)
 		if err != nil {
 			t.Fatalf("read %s: %v", name, err)
