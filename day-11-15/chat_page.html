@@ -1,0 +1,1913 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 11 Memory Agent</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --panel-soft: #f9fafc;
+      --text: #171b21;
+      --muted: #667085;
+      --line: #d9e0ea;
+      --line-strong: #c7d1df;
+      --accent: #246bfe;
+      --accent-dark: #1554d1;
+      --accent-soft: #eaf1ff;
+      --agent: #ffffff;
+      --user: #246bfe;
+      --code: #eef1f5;
+      --danger: #b42318;
+      --shadow: 0 18px 44px rgba(30, 41, 59, .08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .58;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible {
+      outline: 3px solid rgba(36, 107, 254, .28);
+      outline-offset: 2px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      height: 100dvh;
+      min-width: 0;
+    }
+
+    .sidebar {
+      display: grid;
+      grid-template-rows: auto auto auto auto minmax(0, 1fr);
+      min-width: 0;
+      min-height: 0;
+      border-right: 1px solid var(--line);
+      background: var(--panel-soft);
+      padding: 20px 14px 14px;
+      z-index: 20;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 2px 8px 18px;
+    }
+
+    .app-mark {
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 800;
+      box-shadow: 0 8px 18px rgba(36, 107, 254, .2);
+    }
+
+    .app-name {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 760;
+      line-height: 1.2;
+    }
+
+    .app-description {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .new-dialog {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 10px;
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--text);
+      padding: 0 13px;
+      font-weight: 700;
+      transition: border-color .16s ease, background .16s ease, transform .16s ease;
+    }
+
+    .new-dialog:hover:not(:disabled) {
+      border-color: #aebbd0;
+      background: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .profile-button {
+      margin-top: 8px;
+    }
+
+    .profile-dialog {
+      width: min(620px, calc(100vw - 28px));
+      max-height: calc(100dvh - 28px);
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      color: var(--text);
+      padding: 0;
+      box-shadow: 0 24px 70px rgba(15, 23, 42, .24);
+    }
+
+    .profile-dialog::backdrop {
+      background: rgba(15, 23, 42, .42);
+    }
+
+    .profile-form {
+      display: grid;
+      gap: 16px;
+      padding: 22px;
+    }
+
+    .profile-form h2,
+    .profile-form p {
+      margin: 0;
+    }
+
+    .profile-form p,
+    .profile-field small,
+    .profile-message {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .profile-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .profile-field {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+      color: #344054;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .profile-field.wide {
+      grid-column: 1 / -1;
+    }
+
+    .profile-field input,
+    .profile-field select,
+    .profile-field textarea {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--text);
+      padding: 9px 11px;
+      font-weight: 400;
+    }
+
+    .profile-field textarea {
+      min-height: 82px;
+      max-height: 150px;
+      resize: vertical;
+    }
+
+    .profile-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .profile-actions button {
+      min-height: 42px;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 0 16px;
+      font-weight: 700;
+    }
+
+    .profile-actions .primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .new-dialog-icon {
+      color: var(--accent-dark);
+      font-size: 22px;
+      font-weight: 450;
+      line-height: 1;
+    }
+
+    .dialog-list-heading {
+      margin: 22px 8px 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .dialog-list {
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 2px 0 10px;
+      scrollbar-gutter: stable;
+    }
+
+    .dialog-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: #344054;
+      padding: 8px 10px;
+      text-align: left;
+      transition: border-color .14s ease, background .14s ease, color .14s ease;
+    }
+
+    .dialog-item + .dialog-item {
+      margin-top: 2px;
+    }
+
+    .dialog-item::before {
+      content: "";
+      flex: 0 0 auto;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #c8d0dc;
+    }
+
+    .dialog-item:hover:not(:disabled) {
+      background: #eef2f7;
+      color: var(--text);
+    }
+
+    .dialog-item.active {
+      border-color: #cedcff;
+      background: var(--accent-soft);
+      color: #123d9a;
+      font-weight: 720;
+    }
+
+    .dialog-item.active::before {
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(36, 107, 254, .12);
+    }
+
+    .dialog-item-title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .dialog-list-state {
+      margin: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .sidebar-backdrop {
+      display: none;
+    }
+
+    .chat-shell {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      gap: 14px;
+      width: min(100%, 1060px);
+      height: 100dvh;
+      min-width: 0;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .chat-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-row: 1;
+      align-items: center;
+      gap: 16px;
+      padding: 3px 2px 1px;
+    }
+
+    .current-dialog {
+      min-width: 0;
+    }
+
+    .current-dialog-label {
+      margin-bottom: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    h1 {
+      overflow: hidden;
+      margin: 0;
+      font-size: 23px;
+      font-weight: 740;
+      line-height: 1.2;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .task-state-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-top: 7px;
+    }
+
+    .task-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 25px;
+      border: 1px solid #c8d7f5;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: #234d9e;
+      padding: 3px 9px;
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .task-badge.paused {
+      border-color: #f1cf8a;
+      background: #fff7e6;
+      color: #8a4b08;
+    }
+
+    .task-actions {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .task-action {
+      min-height: 25px;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      background: var(--panel);
+      color: #344054;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .task-action:hover:not(:disabled) {
+      border-color: #9fb1ca;
+      background: var(--panel-soft);
+    }
+
+    .menu-button {
+      display: none;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 112px;
+      justify-content: flex-end;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: right;
+    }
+
+    .status::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #16a34a;
+      box-shadow: 0 0 0 4px rgba(22, 163, 74, .12);
+    }
+
+    .status.busy::before {
+      background: #f59e0b;
+      box-shadow: 0 0 0 4px rgba(245, 158, 11, .14);
+    }
+
+    .status.error::before {
+      background: var(--danger);
+      box-shadow: 0 0 0 4px rgba(180, 35, 24, .12);
+    }
+
+    .error-banner {
+      grid-row: 2;
+      border: 1px solid #f1b8b2;
+      border-radius: 8px;
+      background: #fff4f2;
+      color: var(--danger);
+      padding: 10px 13px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    main {
+      grid-row: 3;
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .messages {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      height: 100%;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 20px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .92), rgba(249, 250, 252, .92)),
+        var(--panel-soft);
+    }
+
+    .conversation-state {
+      display: grid;
+      place-items: center;
+      min-height: 100%;
+      padding: 28px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .conversation-state strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--text);
+      font-size: 15px;
+    }
+
+    .message {
+      display: grid;
+      gap: 7px;
+      max-width: min(720px, 88%);
+    }
+
+    .message.user {
+      align-self: end;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: 0;
+    }
+
+    .user .label {
+      justify-self: end;
+    }
+
+    .bubble {
+      overflow-wrap: anywhere;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 13px 15px;
+      line-height: 1.55;
+      font-size: 15px;
+      box-shadow: 0 8px 24px rgba(30, 41, 59, .05);
+    }
+
+    .agent .bubble {
+      background: var(--agent);
+    }
+
+    .user .bubble {
+      background: var(--user);
+      border-color: var(--user);
+      color: #ffffff;
+      box-shadow: 0 10px 28px rgba(36, 107, 254, .2);
+    }
+
+    .error .bubble {
+      color: var(--danger);
+      background: #fff4f2;
+      border-color: #f1b8b2;
+    }
+
+    .memory-update {
+      align-self: start;
+      margin-top: -8px;
+      border-radius: 999px;
+      background: #eef4ff;
+      color: #365a91;
+      padding: 5px 10px;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .markdown > :first-child {
+      margin-top: 0;
+    }
+
+    .markdown > :last-child {
+      margin-bottom: 0;
+    }
+
+    .markdown p {
+      margin: 0 0 10px;
+      white-space: pre-wrap;
+    }
+
+    .markdown ul,
+    .markdown ol {
+      margin: 0 0 10px;
+      padding-left: 22px;
+    }
+
+    .markdown li + li {
+      margin-top: 4px;
+    }
+
+    .markdown code {
+      border-radius: 6px;
+      background: var(--code);
+      color: #101828;
+      padding: 2px 5px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: .92em;
+      overflow-wrap: anywhere;
+    }
+
+    .user .markdown code {
+      background: rgba(255, 255, 255, .18);
+      color: #ffffff;
+    }
+
+    .markdown pre {
+      max-width: 100%;
+      margin: 0 0 10px;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #111827;
+      padding: 12px;
+    }
+
+    .markdown pre code {
+      display: block;
+      min-width: max-content;
+      background: transparent;
+      color: #f9fafb;
+      padding: 0;
+      white-space: pre;
+      overflow-wrap: normal;
+    }
+
+    .markdown a {
+      color: var(--accent-dark);
+      font-weight: 650;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    .user .markdown a {
+      color: #ffffff;
+    }
+
+    .typing .bubble {
+      color: var(--muted);
+      background: #ffffff;
+    }
+
+    .typing-dots {
+      display: inline-flex;
+      gap: 4px;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+
+    .typing-dots span {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: .38;
+      animation: typingPulse 1.15s infinite ease-in-out;
+    }
+
+    .typing-dots span:nth-child(2) {
+      animation-delay: .15s;
+    }
+
+    .typing-dots span:nth-child(3) {
+      animation-delay: .3s;
+    }
+
+    @keyframes typingPulse {
+      0%, 80%, 100% {
+        transform: translateY(0);
+        opacity: .32;
+      }
+
+      40% {
+        transform: translateY(-2px);
+        opacity: .9;
+      }
+    }
+
+    .chat-form {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-row: 4;
+      align-items: end;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 10px 10px 10px 14px;
+      box-shadow: var(--shadow);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 48px;
+      max-height: 170px;
+      resize: none;
+      overflow-y: auto;
+      border: 0;
+      outline: none;
+      color: var(--text);
+      font: inherit;
+      line-height: 1.45;
+      background: transparent;
+    }
+
+    textarea::placeholder {
+      color: #98a2b3;
+    }
+
+    textarea:disabled {
+      cursor: default;
+      color: var(--muted);
+    }
+
+    .send-button {
+      min-width: 112px;
+      min-height: 44px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #ffffff;
+      font-weight: 700;
+      transition: background .16s ease, opacity .16s ease, transform .16s ease;
+    }
+
+    .send-button:hover:not(:disabled) {
+      background: var(--accent-dark);
+      transform: translateY(-1px);
+    }
+
+    .composer-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      padding: 0 2px 2px;
+    }
+
+    @media (max-width: 760px) {
+      .app-shell {
+        display: block;
+      }
+
+      .sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: min(86vw, 320px);
+        border-right: 1px solid var(--line);
+		box-shadow: none;
+		transform: translateX(calc(-100% - 32px));
+		transition: transform .2s ease;
+      }
+
+      body.sidebar-open .sidebar {
+		box-shadow: 22px 0 50px rgba(17, 24, 39, .18);
+        transform: translateX(0);
+      }
+
+      .sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: rgba(15, 23, 42, .34);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .2s ease;
+        z-index: 10;
+      }
+
+      body.sidebar-open .sidebar-backdrop {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .chat-shell {
+        padding: 12px;
+        gap: 10px;
+      }
+
+      .chat-header {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 10px;
+      }
+
+      .menu-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        color: var(--text);
+        font-size: 19px;
+      }
+
+      .menu-button:hover:not(:disabled) {
+        background: var(--accent-soft);
+      }
+
+      .status {
+        min-width: auto;
+      }
+
+      .messages {
+        padding: 12px;
+      }
+
+      .message {
+        max-width: 100%;
+      }
+
+      .chat-form {
+        padding-left: 12px;
+      }
+
+      .send-button {
+        min-width: 96px;
+      }
+
+      .composer-note {
+        display: none;
+      }
+    }
+
+    @media (max-width: 430px) {
+
+      .profile-grid {
+        grid-template-columns: 1fr;
+      }
+      .status {
+        font-size: 0;
+      }
+
+      .status::before {
+        margin: 0 5px;
+      }
+
+      h1 {
+        font-size: 19px;
+      }
+
+      .current-dialog-label {
+        display: none;
+      }
+
+      .send-button {
+        min-width: 48px;
+        padding: 0 12px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Диалоги">
+      <div class="sidebar-brand">
+        <div class="app-mark" aria-hidden="true">11</div>
+        <div>
+          <div class="app-name">Memory Agent</div>
+          <div class="app-description">Три слоя памяти</div>
+        </div>
+      </div>
+      <button class="new-dialog" type="button" id="new-dialog" disabled>
+        <span class="new-dialog-icon" aria-hidden="true">+</span>
+        <span>Новый диалог</span>
+      </button>
+      <button class="new-dialog profile-button" type="button" id="edit-profile" disabled>
+        <span class="new-dialog-icon" aria-hidden="true">⚙</span>
+        <span>Профиль ответов</span>
+      </button>
+      <div class="dialog-list-heading" id="dialog-list-heading">Диалоги</div>
+      <nav class="dialog-list" id="dialog-list" aria-labelledby="dialog-list-heading" aria-busy="true">
+        <p class="dialog-list-state">Загружаем список…</p>
+      </nav>
+    </aside>
+    <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" aria-label="Закрыть список диалогов" tabindex="-1"></button>
+
+    <section class="chat-shell">
+      <header class="chat-header">
+        <button class="menu-button" id="menu-button" type="button" aria-label="Открыть список диалогов" aria-controls="sidebar" aria-expanded="false">☰</button>
+        <div class="current-dialog">
+          <div class="current-dialog-label">Текущий диалог</div>
+          <h1 id="current-dialog-title">Диалог</h1>
+          <div class="task-state-row" aria-live="polite">
+            <span class="task-badge" id="task-badge">Задача не создана</span>
+            <span class="task-actions" id="task-actions"></span>
+          </div>
+        </div>
+        <div class="status" id="status" aria-live="polite">Загрузка</div>
+      </header>
+      <div class="error-banner" id="error-banner" role="alert" hidden></div>
+      <main>
+        <div class="messages" id="messages" aria-busy="true">
+          <div class="conversation-state"><div><strong>Загружаем диалог</strong>Пожалуйста, подождите.</div></div>
+        </div>
+      </main>
+      <form class="chat-form" id="chat-form">
+        <div>
+          <textarea id="message-input" name="message" placeholder="Напишите сообщение" autocomplete="off" rows="1" required autofocus disabled></textarea>
+          <div class="composer-note">Enter отправляет, Shift+Enter переносит строку</div>
+        </div>
+        <button class="send-button" type="submit" disabled>Отправить</button>
+      </form>
+    </section>
+  </div>
+
+  <dialog class="profile-dialog" id="profile-dialog" aria-labelledby="profile-title">
+    <form class="profile-form" id="profile-form">
+      <div>
+        <h2 id="profile-title">Профиль ответов</h2>
+        <p>Эти настройки общие для всех диалогов и применяются уже к следующему запросу.</p>
+      </div>
+      <div class="profile-grid">
+        <label class="profile-field wide">Имя или обращение
+          <input id="profile-name" name="name" maxlength="80" autocomplete="name">
+        </label>
+        <label class="profile-field">Язык ответа
+          <select id="profile-language" name="language" required>
+            <option value="ru">Русский</option>
+            <option value="en">Английский</option>
+          </select>
+        </label>
+        <label class="profile-field">Тон
+          <select id="profile-tone" name="tone" required>
+            <option value="formal">Формальный</option>
+            <option value="friendly">Дружелюбный</option>
+          </select>
+        </label>
+        <label class="profile-field">Подробность
+          <select id="profile-detail" name="detail" required>
+            <option value="concise">Кратко</option>
+            <option value="detailed">Подробно</option>
+          </select>
+        </label>
+        <label class="profile-field">Формат
+          <select id="profile-format" name="format" required>
+            <option value="plain_text">Обычный текст</option>
+            <option value="bullets">Маркированный список</option>
+            <option value="steps">Пошаговый список</option>
+          </select>
+        </label>
+        <label class="profile-field wide">Устойчивый контекст
+          <textarea id="profile-context" name="context" maxlength="1000" placeholder="Например: начинающий Go-разработчик"></textarea>
+        </label>
+        <label class="profile-field wide">Ограничения
+          <textarea id="profile-constraints" name="constraints" placeholder="Одно ограничение на строку, не больше 10"></textarea>
+          <small>Например: «Не использовать примеры на Python».</small>
+        </label>
+      </div>
+      <div class="profile-message" id="profile-message" role="status" aria-live="polite"></div>
+      <div class="profile-actions">
+        <button type="button" id="profile-cancel">Отмена</button>
+        <button class="primary" type="submit" id="profile-save">Сохранить</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    const form = document.querySelector('#chat-form');
+    const input = document.querySelector('#message-input');
+    const messages = document.querySelector('#messages');
+    const status = document.querySelector('#status');
+    const button = form.querySelector('button');
+    const dialogList = document.querySelector('#dialog-list');
+    const currentDialogTitle = document.querySelector('#current-dialog-title');
+    const taskBadge = document.querySelector('#task-badge');
+    const taskActions = document.querySelector('#task-actions');
+    const newDialogButton = document.querySelector('#new-dialog');
+    const profileButton = document.querySelector('#edit-profile');
+    const profileDialog = document.querySelector('#profile-dialog');
+    const profileForm = document.querySelector('#profile-form');
+    const profileCancel = document.querySelector('#profile-cancel');
+    const profileSave = document.querySelector('#profile-save');
+    const profileMessage = document.querySelector('#profile-message');
+    const menuButton = document.querySelector('#menu-button');
+    const sidebarBackdrop = document.querySelector('#sidebar-backdrop');
+    const errorBanner = document.querySelector('#error-banner');
+    const TICK = String.fromCharCode(96);
+    const CODE_FENCE = TICK.repeat(3);
+    let isSending = false;
+    let activeDialogID = '';
+    let dialogs = [];
+    let navigationToken = 0;
+    let currentTaskState = null;
+
+    function showEmptyState() {
+      showConversationState('Новый диалог', 'Задайте первый вопрос — история начнётся здесь.');
+    }
+
+    function showConversationState(title, description) {
+      const state = document.createElement('div');
+      state.className = 'conversation-state';
+      const content = document.createElement('div');
+      const heading = document.createElement('strong');
+      heading.textContent = title;
+      content.append(heading, document.createTextNode(description));
+      state.append(content);
+      messages.replaceChildren(state);
+      messages.setAttribute('aria-busy', 'false');
+    }
+
+    function showHistoryLoading(title = 'Загружаем историю') {
+      showConversationState(title, 'Пожалуйста, подождите.');
+      messages.setAttribute('aria-busy', 'true');
+    }
+
+    function showError(message) {
+      errorBanner.textContent = message;
+      errorBanner.hidden = false;
+    }
+
+    function clearError() {
+      errorBanner.textContent = '';
+      errorBanner.hidden = true;
+    }
+
+    async function readJSON(response) {
+      let data;
+      try {
+        data = await response.json();
+      } catch (error) {
+        throw new Error('Сервер вернул некорректный JSON');
+      }
+      if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        throw new Error('Сервер вернул некорректный ответ');
+      }
+      if (!response.ok) {
+        const messagesByStatus = {
+          400: 'Сервер отклонил запрос',
+          404: 'Выбранный диалог больше не существует',
+          409: 'Не удалось изменить диалог из-за конфликта',
+          500: 'Сервер не смог прочитать данные диалога',
+          502: 'Агент сейчас недоступен',
+        };
+        throw new Error(data.reason || data.error || messagesByStatus[response.status] || 'Ошибка запроса к серверу');
+      }
+      return data;
+    }
+
+    function validateDialog(dialog) {
+      if (!dialog || typeof dialog !== 'object' || typeof dialog.id !== 'string' || !dialog.id.trim() || typeof dialog.title !== 'string' || !dialog.title.trim()) {
+        throw new Error('Сервер вернул некорректный список диалогов');
+      }
+      return {id: dialog.id, title: dialog.title.trim()};
+    }
+
+    function validateDialogID(value) {
+      if (typeof value !== 'string' || !value.trim()) {
+        throw new Error('Сервер не вернул ID диалога');
+      }
+      return value;
+    }
+
+    function validateTaskState(value) {
+      if (value == null) {
+        return null;
+      }
+      const stages = new Set(['planning', 'execution', 'validation', 'done']);
+      if (typeof value !== 'object' || Array.isArray(value) || !stages.has(value.stage) || typeof value.current_step !== 'string' || typeof value.expected_action !== 'string' || typeof value.paused !== 'boolean') {
+        throw new Error('Сервер вернул некорректное состояние задачи');
+      }
+      return value;
+    }
+
+    function renderTaskState(state) {
+      currentTaskState = state;
+      taskActions.replaceChildren();
+      taskBadge.className = 'task-badge';
+      if (!state) {
+        taskBadge.textContent = 'Задача не создана';
+        return;
+      }
+      taskBadge.textContent = state.stage + (state.paused ? ' · пауза' : '');
+      taskBadge.title = state.current_step + ' — ' + state.expected_action;
+      taskBadge.classList.toggle('paused', state.paused);
+      if (state.stage === 'done') {
+        return;
+      }
+      if (state.paused) {
+        addTaskAction('Продолжить', 'resume');
+        return;
+      }
+      if (state.stage === 'planning' && !state.plan_approved) {
+        addTaskAction('Утвердить план', 'approve');
+      }
+      if (state.stage === 'validation') {
+        addTaskAction('Проверка пройдена', 'validation-pass');
+        addTaskAction('Есть ошибки', 'validation-fail');
+      }
+      const allowed = {
+        planning: state.plan_approved ? ['execution'] : [],
+        execution: ['planning', 'validation'],
+        validation: state.validation_passed ? ['execution', 'done'] : ['execution'],
+      }[state.stage] || [];
+      for (const stage of allowed) {
+        addTaskAction('→ ' + stage, 'transition', stage);
+      }
+      addTaskAction('Пауза', 'pause');
+    }
+
+    function addTaskAction(label, action, stage = '') {
+      const actionButton = document.createElement('button');
+      actionButton.type = 'button';
+      actionButton.className = 'task-action';
+      actionButton.textContent = label;
+      actionButton.disabled = isSending;
+      actionButton.addEventListener('click', () => runTaskAction(action, stage));
+      taskActions.append(actionButton);
+    }
+
+    async function loadTaskState(dialogID, token = navigationToken) {
+      const response = await fetch('/api/task?dialog_id=' + encodeURIComponent(dialogID));
+      const data = await readJSON(response);
+      if (validateDialogID(data.dialog_id) !== dialogID) {
+        throw new Error('Сервер вернул состояние задачи другого диалога');
+      }
+      if (token !== navigationToken || dialogID !== activeDialogID) {
+        return;
+      }
+      renderTaskState(validateTaskState(data.task_state));
+    }
+
+    async function runTaskAction(action, stage = '') {
+      if (isSending || !activeDialogID || !currentTaskState) {
+        return;
+      }
+      let path = action;
+      let body = {};
+      if (action === 'approve') {
+        const plan = window.prompt('Утверждённый план', currentTaskState.plan || '');
+        if (plan == null || !plan.trim()) {
+          return;
+        }
+        path = 'approve-plan';
+        body = {plan: plan.trim()};
+      } else if (action === 'validation-pass' || action === 'validation-fail') {
+        const details = window.prompt('Результат валидации', currentTaskState.validation_details || '');
+        if (details == null || !details.trim()) {
+          return;
+        }
+        path = 'validation';
+        body = {passed: action === 'validation-pass', details: details.trim()};
+      } else if (action === 'transition') {
+        body = {stage};
+      }
+      clearError();
+      setSending(true, 'Обновляем задачу');
+      try {
+        const response = await fetch('/api/task/' + path + '?dialog_id=' + encodeURIComponent(activeDialogID), {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(body),
+        });
+        const data = await readJSON(response);
+        if (validateDialogID(data.dialog_id) !== activeDialogID) {
+          throw new Error('Сервер обновил состояние другого диалога');
+        }
+        renderTaskState(validateTaskState(data.task_state));
+        setStatus('Готов');
+      } catch (error) {
+        showError(error.message);
+        setStatus('Ошибка', 'error');
+        try {
+          await loadTaskState(activeDialogID);
+        } catch (_) {
+          // Основная ошибка уже показана пользователю.
+        }
+      } finally {
+        setSending(false);
+      }
+    }
+
+    function renderDialogList() {
+      dialogList.replaceChildren();
+      for (const dialog of dialogs) {
+        const dialogButton = document.createElement('button');
+        dialogButton.type = 'button';
+        dialogButton.className = 'dialog-item';
+        dialogButton.disabled = isSending;
+        dialogButton.setAttribute('aria-label', 'Открыть диалог «' + dialog.title + '»');
+
+        const title = document.createElement('span');
+        title.className = 'dialog-item-title';
+        title.textContent = dialog.title;
+        dialogButton.append(title);
+
+        const isActive = dialog.id === activeDialogID;
+        dialogButton.classList.toggle('active', isActive);
+        if (isActive) {
+          dialogButton.setAttribute('aria-current', 'page');
+        } else {
+          dialogButton.removeAttribute('aria-current');
+        }
+        dialogButton.addEventListener('click', () => selectDialog(dialog.id));
+        dialogList.append(dialogButton);
+      }
+      dialogList.setAttribute('aria-busy', 'false');
+    }
+
+    function updateCurrentDialogTitle() {
+      const activeDialog = dialogs.find((dialog) => dialog.id === activeDialogID);
+      currentDialogTitle.textContent = activeDialog ? activeDialog.title : 'Диалог';
+    }
+
+    async function loadDialogs(preferredID = '') {
+      const response = await fetch('/api/dialogs');
+      const data = await readJSON(response);
+      if (!Array.isArray(data.dialogs) || !data.dialogs.length) {
+        throw new Error('Сервер не вернул ни одного диалога');
+      }
+      dialogs = data.dialogs.map(validateDialog);
+      const uniqueIDs = new Set(dialogs.map((dialog) => dialog.id));
+      if (uniqueIDs.size !== dialogs.length) {
+        throw new Error('Сервер вернул повторяющиеся диалоги');
+      }
+      const preferred = dialogs.find((dialog) => dialog.id === preferredID);
+      const serverActive = dialogs.find((dialog) => dialog.id === data.active_dialog_id);
+      activeDialogID = (preferred || serverActive || dialogs[0]).id;
+      renderDialogList();
+      updateCurrentDialogTitle();
+      updateButtonState();
+      return activeDialogID;
+    }
+
+    async function loadHistory(dialogID, token = navigationToken) {
+      const response = await fetch('/api/history?dialog_id=' + encodeURIComponent(dialogID));
+      const data = await readJSON(response);
+      if (validateDialogID(data.dialog_id) !== dialogID) {
+        throw new Error('Сервер вернул историю другого диалога');
+      }
+      if (!Array.isArray(data.messages)) {
+        throw new Error('Сервер вернул некорректную историю');
+      }
+      if (token !== navigationToken || dialogID !== activeDialogID) {
+        return;
+      }
+      messages.replaceChildren();
+      for (const message of data.messages) {
+        if (!message || (message.role !== 'user' && message.role !== 'assistant') || typeof message.content !== 'string') {
+          throw new Error('Сервер вернул некорректное сообщение истории');
+        }
+        addMessage(message.role, message.content);
+      }
+      if (!data.messages.length) {
+        showEmptyState();
+      }
+      messages.setAttribute('aria-busy', 'false');
+      await loadTaskState(dialogID, token);
+    }
+
+    async function restoreServerDialog(message) {
+      const token = ++navigationToken;
+      try {
+        const restoredID = await loadDialogs();
+        showHistoryLoading();
+        await loadHistory(restoredID, token);
+      } catch (restoreError) {
+        dialogs = [];
+        activeDialogID = '';
+        renderTaskState(null);
+        dialogList.replaceChildren();
+        const state = document.createElement('p');
+        state.className = 'dialog-list-state';
+        state.textContent = 'Список диалогов недоступен.';
+        dialogList.append(state);
+        dialogList.setAttribute('aria-busy', 'false');
+        currentDialogTitle.textContent = 'Диалог недоступен';
+        showConversationState('История недоступна', 'Обновите страницу, чтобы повторить попытку.');
+        showError(message + '. ' + restoreError.message);
+      }
+    }
+
+    async function bootstrap() {
+      setStatus('Загрузка', 'busy');
+      setSending(true);
+      clearError();
+      const token = ++navigationToken;
+      try {
+        const dialogID = await loadDialogs();
+        showHistoryLoading();
+        await loadHistory(dialogID, token);
+        setStatus('Готов');
+      } catch (error) {
+        dialogs = [];
+        activeDialogID = '';
+        dialogList.replaceChildren();
+        const state = document.createElement('p');
+        state.className = 'dialog-list-state';
+        state.textContent = 'Не удалось загрузить диалоги.';
+        dialogList.append(state);
+        dialogList.setAttribute('aria-busy', 'false');
+        showConversationState('Не удалось открыть чат', 'Проверьте сервер и обновите страницу.');
+        showError(error.message);
+        setStatus('Ошибка', 'error');
+      } finally {
+        setSending(false);
+      }
+    }
+
+    function addMessage(role, text, isError = false) {
+      removeEmptyState();
+      const viewRole = role === 'assistant' ? 'agent' : role;
+      const item = document.createElement('section');
+      item.className = 'message ' + viewRole + (isError ? ' error' : '');
+
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = viewRole === 'user' ? 'Вы' : 'Agent';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble markdown';
+      bubble.append(renderMarkdown(text));
+
+      item.append(label, bubble);
+      messages.append(item);
+      messages.scrollTop = messages.scrollHeight;
+      return item;
+    }
+
+    function validateMemoryUpdates(value) {
+      if (value === undefined) {
+        return [];
+      }
+      if (!Array.isArray(value)) {
+        throw new Error('Сервер вернул некорректные сведения об обновлении памяти');
+      }
+      const allowed = new Set([
+        'working:goal', 'working:status', 'working:notes', 'working:results',
+        'working:task_create', 'working:task_progress', 'working:task_approve_plan',
+        'working:task_transition', 'working:task_validation', 'working:task_pause', 'working:task_resume',
+        'long-term:profile', 'long-term:decisions', 'long-term:knowledge',
+      ]);
+      return value.map((update) => {
+        if (!update || typeof update !== 'object' || !allowed.has(update.layer + ':' + update.category) || typeof update.summary !== 'string' || !update.summary.trim()) {
+          throw new Error('Сервер вернул некорректные сведения об обновлении памяти');
+        }
+        return update.summary.trim();
+      });
+    }
+
+    function addMemoryUpdateNotice(updateSummaries) {
+      if (!updateSummaries.length) {
+        return;
+      }
+      const notice = document.createElement('div');
+      notice.className = 'memory-update';
+      notice.setAttribute('role', 'status');
+      notice.textContent = 'Память обновлена: ' + updateSummaries.join(', ');
+      messages.append(notice);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function removeEmptyState() {
+      const conversationState = messages.querySelector('.conversation-state');
+      if (conversationState) {
+        conversationState.remove();
+      }
+    }
+
+    function addTypingMessage() {
+      removeEmptyState();
+      const item = document.createElement('section');
+      item.className = 'message agent typing';
+
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = 'Agent';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.append('Думаю');
+
+      const dots = document.createElement('span');
+      dots.className = 'typing-dots';
+      dots.setAttribute('aria-hidden', 'true');
+      dots.append(document.createElement('span'), document.createElement('span'), document.createElement('span'));
+      bubble.append(dots);
+
+      item.append(label, bubble);
+      messages.append(item);
+      messages.scrollTop = messages.scrollHeight;
+      return item;
+    }
+
+    function setStatus(text, state = '') {
+      status.textContent = text;
+      status.className = 'status' + (state ? ' ' + state : '');
+    }
+
+    function setSending(value, busyStatus = '') {
+      isSending = value;
+      newDialogButton.disabled = value;
+      profileButton.disabled = value;
+      input.disabled = value || !activeDialogID;
+      for (const dialogButton of dialogList.querySelectorAll('.dialog-item')) {
+        dialogButton.disabled = value;
+      }
+      for (const taskAction of taskActions.querySelectorAll('.task-action')) {
+        taskAction.disabled = value;
+      }
+      updateButtonState();
+      if (value && busyStatus) {
+        setStatus(busyStatus, 'busy');
+      }
+    }
+
+    function updateButtonState() {
+      button.disabled = isSending || !activeDialogID || input.value.trim() === '';
+    }
+
+    function resizeInput() {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 170) + 'px';
+    }
+
+    function openSidebar() {
+      document.body.classList.add('sidebar-open');
+      menuButton.setAttribute('aria-expanded', 'true');
+      newDialogButton.focus();
+    }
+
+    function closeSidebar(restoreFocus = false) {
+      document.body.classList.remove('sidebar-open');
+      menuButton.setAttribute('aria-expanded', 'false');
+      if (restoreFocus) {
+        menuButton.focus();
+      }
+    }
+
+    function renderMarkdown(text) {
+      const root = document.createDocumentFragment();
+      const lines = String(text || '').replace(/\r\n?/g, '\n').split('\n');
+      let index = 0;
+
+      while (index < lines.length) {
+        const line = lines[index];
+        if (line.trim() === '') {
+          index++;
+          continue;
+        }
+
+        if (isFenceLine(line)) {
+          const codeLines = [];
+          index++;
+          while (index < lines.length && !isFenceLine(lines[index])) {
+            codeLines.push(lines[index]);
+            index++;
+          }
+          if (index < lines.length) {
+            index++;
+          }
+          root.append(createCodeBlock(codeLines.join('\n')));
+          continue;
+        }
+
+        const unordered = listMatch(line, false);
+        if (unordered) {
+          const list = document.createElement('ul');
+          while (index < lines.length) {
+            const match = listMatch(lines[index], false);
+            if (!match) {
+              break;
+            }
+            const item = document.createElement('li');
+            appendInline(item, match);
+            list.append(item);
+            index++;
+          }
+          root.append(list);
+          continue;
+        }
+
+        const ordered = listMatch(line, true);
+        if (ordered) {
+          const list = document.createElement('ol');
+          while (index < lines.length) {
+            const match = listMatch(lines[index], true);
+            if (!match) {
+              break;
+            }
+            const item = document.createElement('li');
+            appendInline(item, match);
+            list.append(item);
+            index++;
+          }
+          root.append(list);
+          continue;
+        }
+
+        const paragraph = [];
+        while (index < lines.length && lines[index].trim() !== '' && !isFenceLine(lines[index]) && !listMatch(lines[index], false) && !listMatch(lines[index], true)) {
+          paragraph.push(lines[index]);
+          index++;
+        }
+        const p = document.createElement('p');
+        appendInline(p, paragraph.join('\n'));
+        root.append(p);
+      }
+
+      if (!root.childNodes.length) {
+        root.append(document.createTextNode(''));
+      }
+      return root;
+    }
+
+    function isFenceLine(line) {
+      return line.trim().startsWith(CODE_FENCE);
+    }
+
+    function listMatch(line, ordered) {
+      const pattern = ordered ? /^\s*\d+[.)]\s+(.+)$/ : /^\s*[-*]\s+(.+)$/;
+      const match = line.match(pattern);
+      return match ? match[1] : null;
+    }
+
+    function createCodeBlock(code) {
+      const pre = document.createElement('pre');
+      const codeElement = document.createElement('code');
+      codeElement.textContent = code;
+      pre.append(codeElement);
+      return pre;
+    }
+
+    function appendInline(parent, source) {
+      let position = 0;
+      const value = String(source || '');
+
+      while (position < value.length) {
+        const token = nextInlineToken(value, position);
+        if (!token) {
+          parent.append(document.createTextNode(value.slice(position)));
+          break;
+        }
+        if (token.start > position) {
+          parent.append(document.createTextNode(value.slice(position, token.start)));
+        }
+
+        if (token.type === 'code') {
+          const code = document.createElement('code');
+          code.textContent = token.content;
+          parent.append(code);
+        } else if (token.type === 'strong') {
+          const strong = document.createElement('strong');
+          appendInline(strong, token.content);
+          parent.append(strong);
+        } else if (token.type === 'em') {
+          const em = document.createElement('em');
+          appendInline(em, token.content);
+          parent.append(em);
+        } else if (token.type === 'link') {
+          const href = safeHref(token.href);
+          if (href) {
+            const link = document.createElement('a');
+            link.href = href;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            appendInline(link, token.label);
+            parent.append(link);
+          } else {
+            parent.append(document.createTextNode(token.label + ' (' + token.href + ')'));
+          }
+        }
+
+        position = token.end;
+      }
+    }
+
+    function nextInlineToken(value, start) {
+      const candidates = [
+        findCodeToken(value, start),
+        findStrongToken(value, start),
+        findLinkToken(value, start),
+        findEmToken(value, start),
+      ].filter(Boolean);
+
+      candidates.sort((left, right) => left.start - right.start);
+      return candidates[0] || null;
+    }
+
+    function findCodeToken(value, start) {
+      const open = value.indexOf(TICK, start);
+      if (open === -1) {
+        return null;
+      }
+      const close = value.indexOf(TICK, open + 1);
+      if (close === -1) {
+        return null;
+      }
+      return {type: 'code', start: open, end: close + 1, content: value.slice(open + 1, close)};
+    }
+
+    function findStrongToken(value, start) {
+      const open = value.indexOf('**', start);
+      if (open === -1) {
+        return null;
+      }
+      const close = value.indexOf('**', open + 2);
+      if (close === -1 || close === open + 2) {
+        return null;
+      }
+      return {type: 'strong', start: open, end: close + 2, content: value.slice(open + 2, close)};
+    }
+
+    function findEmToken(value, start) {
+      let open = value.indexOf('*', start);
+      while (open !== -1 && (value[open - 1] === '*' || value[open + 1] === '*')) {
+        open = value.indexOf('*', open + 1);
+      }
+      if (open === -1) {
+        return null;
+      }
+      let close = value.indexOf('*', open + 1);
+      while (close !== -1 && (value[close - 1] === '*' || value[close + 1] === '*')) {
+        close = value.indexOf('*', close + 1);
+      }
+      if (close === -1 || close === open + 1) {
+        return null;
+      }
+      return {type: 'em', start: open, end: close + 1, content: value.slice(open + 1, close)};
+    }
+
+    function findLinkToken(value, start) {
+      const open = value.indexOf('[', start);
+      if (open === -1) {
+        return null;
+      }
+      const closeLabel = value.indexOf(']', open + 1);
+      if (closeLabel === -1 || value[closeLabel + 1] !== '(') {
+        return null;
+      }
+      const closeHref = value.indexOf(')', closeLabel + 2);
+      if (closeHref === -1) {
+        return null;
+      }
+      const label = value.slice(open + 1, closeLabel);
+      const href = value.slice(closeLabel + 2, closeHref).trim();
+      if (!label || !href) {
+        return null;
+      }
+      return {type: 'link', start: open, end: closeHref + 1, label, href};
+    }
+
+    function safeHref(href) {
+      try {
+        const url = new URL(href, window.location.origin);
+        if (url.protocol === 'http:' || url.protocol === 'https:' || url.protocol === 'mailto:') {
+          return url.href;
+        }
+      } catch (error) {
+        return null;
+      }
+      return null;
+    }
+
+    input.addEventListener('input', () => {
+      resizeInput();
+      updateButtonState();
+    });
+
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        if (!isSending && activeDialogID && input.value.trim() !== '') {
+          form.requestSubmit();
+        }
+      }
+    });
+
+    function fillProfileForm(profile) {
+      const value = profile || {};
+      document.querySelector('#profile-name').value = value.name || '';
+      document.querySelector('#profile-language').value = value.language || 'ru';
+      document.querySelector('#profile-tone').value = value.tone || 'formal';
+      document.querySelector('#profile-detail').value = value.detail || 'concise';
+      document.querySelector('#profile-format').value = value.format || 'plain_text';
+      document.querySelector('#profile-context').value = value.context || '';
+      document.querySelector('#profile-constraints').value = Array.isArray(value.constraints) ? value.constraints.join('\n') : '';
+    }
+
+    profileButton.addEventListener('click', async () => {
+      if (isSending) {
+        return;
+      }
+      profileButton.disabled = true;
+      profileMessage.textContent = 'Загружаем профиль…';
+      try {
+        const response = await fetch('/api/memory/long-term/profile');
+        const data = await readJSON(response);
+        if (typeof data.configured !== 'boolean' || (data.profile !== null && typeof data.profile !== 'object')) {
+          throw new Error('Сервер вернул некорректный профиль');
+        }
+        fillProfileForm(data.profile);
+        profileMessage.textContent = data.configured ? 'Профиль настроен.' : 'Профиль ещё не настроен.';
+        profileDialog.showModal();
+      } catch (error) {
+        showError(error.message);
+        setStatus('Ошибка', 'error');
+      } finally {
+        profileButton.disabled = isSending;
+      }
+    });
+
+    profileCancel.addEventListener('click', () => profileDialog.close());
+
+    profileForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const constraints = document.querySelector('#profile-constraints').value
+        .split(/\r?\n/)
+        .map((value) => value.trim())
+        .filter(Boolean);
+      const profile = {
+        name: document.querySelector('#profile-name').value.trim(),
+        language: document.querySelector('#profile-language').value,
+        tone: document.querySelector('#profile-tone').value,
+        detail: document.querySelector('#profile-detail').value,
+        format: document.querySelector('#profile-format').value,
+        context: document.querySelector('#profile-context').value.trim(),
+        constraints,
+      };
+      profileSave.disabled = true;
+      profileCancel.disabled = true;
+      profileMessage.textContent = 'Сохраняем…';
+      try {
+        const response = await fetch('/api/memory/long-term/profile', {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(profile),
+        });
+        const data = await readJSON(response);
+        if (!data.configured || !data.profile) {
+          throw new Error('Сервер не подтвердил сохранение профиля');
+        }
+        profileMessage.textContent = 'Сохранено. Следующий ответ будет учитывать профиль.';
+        setStatus('Профиль сохранён');
+        window.setTimeout(() => profileDialog.close(), 450);
+      } catch (error) {
+        profileMessage.textContent = error.message;
+      } finally {
+        profileSave.disabled = false;
+        profileCancel.disabled = false;
+      }
+    });
+
+    async function selectDialog(requestedID) {
+      if (isSending || requestedID === activeDialogID) {
+        closeSidebar();
+        return;
+      }
+
+      const token = ++navigationToken;
+      clearError();
+      activeDialogID = requestedID;
+      renderTaskState(null);
+      renderDialogList();
+      updateCurrentDialogTitle();
+      showHistoryLoading('Переключаем диалог');
+      closeSidebar();
+      setSending(true, 'Переключение');
+      try {
+        const response = await fetch('/api/dialogs/active', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({dialog_id: requestedID}),
+        });
+        const data = await readJSON(response);
+        if (validateDialogID(data.dialog_id) !== requestedID) {
+          throw new Error('Сервер выбрал другой диалог');
+        }
+        await loadDialogs(requestedID);
+        if (activeDialogID !== requestedID) {
+          throw new Error('Выбранный диалог больше не существует');
+        }
+        showHistoryLoading();
+        await loadHistory(requestedID, token);
+        setStatus('Готов');
+        input.focus();
+      } catch (error) {
+        showError(error.message);
+        setStatus('Ошибка', 'error');
+        await restoreServerDialog(error.message);
+      } finally {
+        setSending(false);
+      }
+    }
+
+    newDialogButton.addEventListener('click', async () => {
+      if (isSending) {
+        return;
+      }
+      const token = ++navigationToken;
+      clearError();
+      setSending(true, 'Создание диалога');
+      try {
+        const response = await fetch('/api/dialogs', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({}),
+        });
+        const data = await readJSON(response);
+        const createdID = validateDialogID(data.dialog_id);
+        activeDialogID = createdID;
+        renderTaskState(null);
+        await loadDialogs(createdID);
+        if (activeDialogID !== createdID) {
+          throw new Error('Созданный диалог отсутствует в списке');
+        }
+        showHistoryLoading('Открываем новый диалог');
+        await loadHistory(createdID, token);
+        closeSidebar();
+        setStatus('Готов');
+        input.focus();
+      } catch (error) {
+        showError(error.message);
+        setStatus('Ошибка', 'error');
+        await restoreServerDialog(error.message);
+      } finally {
+        setSending(false);
+      }
+    });
+
+    menuButton.addEventListener('click', () => {
+      if (document.body.classList.contains('sidebar-open')) {
+        closeSidebar(true);
+      } else {
+        openSidebar();
+      }
+    });
+
+    sidebarBackdrop.addEventListener('click', () => closeSidebar(true));
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && document.body.classList.contains('sidebar-open')) {
+        closeSidebar(true);
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      if (window.matchMedia('(min-width: 761px)').matches) {
+        closeSidebar();
+      }
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const text = input.value.trim();
+      if (!text || isSending) {
+        return;
+      }
+
+      const requestDialogID = activeDialogID;
+      const token = navigationToken;
+      clearError();
+      addMessage('user', text);
+      input.value = '';
+      resizeInput();
+      setSending(true, 'Агент отвечает');
+      const typing = addTypingMessage();
+
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({message: text, dialog_id: requestDialogID}),
+        });
+        const data = await readJSON(response);
+        if (validateDialogID(data.dialog_id) !== requestDialogID || requestDialogID !== activeDialogID || token !== navigationToken) {
+          throw new Error('Ответ получен для другого диалога');
+        }
+        if (typeof data.content !== 'string') {
+          throw new Error('Сервер вернул некорректный ответ агента');
+        }
+        const memoryUpdates = validateMemoryUpdates(data.memory_updates);
+        renderTaskState(validateTaskState(data.task_state));
+        typing.remove();
+        addMessage('agent', data.content);
+        addMemoryUpdateNotice(memoryUpdates);
+        setStatus('Готов');
+      } catch (error) {
+        typing.remove();
+        try {
+          showHistoryLoading('Восстанавливаем историю');
+          await loadHistory(requestDialogID, token);
+        } catch (historyError) {
+          showConversationState('Не удалось восстановить историю', 'Обновите страницу, чтобы получить сохранённые сообщения.');
+        }
+        showError(error.message);
+        setStatus('Ошибка', 'error');
+      } finally {
+        setSending(false);
+        if (activeDialogID) {
+          input.focus();
+        }
+      }
+    });
+
+    resizeInput();
+    updateButtonState();
+    bootstrap();
+  </script>
+</body>
+</html>
