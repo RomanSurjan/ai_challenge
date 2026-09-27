@@ -1,0 +1,5 @@
+.git
+.env
+outputs
+bin
+**/*_test.go

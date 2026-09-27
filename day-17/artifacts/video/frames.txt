@@ -1,0 +1,13 @@
+file 'frame-1.png'
+duration 4
+file 'frame-2.png'
+duration 4
+file 'frame-3.png'
+duration 4
+file 'frame-4.png'
+duration 5
+file 'frame-5.png'
+duration 5
+file 'frame-6.png'
+duration 6
+file 'frame-6.png'

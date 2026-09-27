@@ -1,0 +1,9 @@
+.git
+.env
+artifacts
+*.mp4
+*.log
+*.db
+*.db-wal
+*.db-shm
+backups

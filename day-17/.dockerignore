@@ -1,0 +1,5 @@
+.git
+.env
+artifacts
+*.mp4
+*.log

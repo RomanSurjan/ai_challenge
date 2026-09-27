@@ -1,0 +1,69 @@
+name: day20
+services:
+  knowledge-mcp:
+    build: .
+    image: day20-orchestration:local
+    container_name: day20-knowledge-mcp
+    command: ["/usr/local/bin/knowledge-mcp"]
+    environment: {MCP_ADDR: ":8088"}
+    ports: ["127.0.0.1:8088:8088"]
+    networks: [day20-internal]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp:size=16m,mode=1777"]
+    healthcheck: {test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1:8088/healthz"], interval: 10s, timeout: 3s, retries: 5}
+  github-mcp:
+    image: day20-orchestration:local
+    container_name: day20-github-mcp
+    command: ["/usr/local/bin/github-mcp"]
+    environment: {MCP_ADDR: ":8089", GITHUB_TOKEN: "${GITHUB_TOKEN:-}"}
+    ports: ["127.0.0.1:8089:8089"]
+    networks: [day20-internal]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp:size=16m,mode=1777"]
+    healthcheck: {test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1:8089/healthz"], interval: 10s, timeout: 3s, retries: 5}
+  artifact-mcp:
+    image: day20-orchestration:local
+    container_name: day20-artifact-mcp
+    command: ["/usr/local/bin/artifact-mcp"]
+    environment: {MCP_ADDR: ":8090", OUTPUT_DIR: /data/outputs}
+    ports: ["127.0.0.1:8090:8090"]
+    networks: [day20-internal]
+    volumes: ["day20-data:/data"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp:size=16m,mode=1777"]
+    healthcheck: {test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1:8090/healthz"], interval: 10s, timeout: 3s, retries: 5}
+  agent-app:
+    image: day20-orchestration:local
+    container_name: day20-agent-app
+    command: ["/usr/local/bin/agent-app"]
+    environment:
+      APP_ADDR: ":8091"
+      KNOWLEDGE_MCP_ENDPOINT: "http://knowledge-mcp:8088/mcp"
+      GITHUB_MCP_ENDPOINT: "http://github-mcp:8089/mcp"
+      ARTIFACT_MCP_ENDPOINT: "http://artifact-mcp:8090/mcp"
+      OUTPUT_DIR: /data/outputs
+      DEEPSEEK_API_KEY: "${DEEPSEEK_API_KEY:?DEEPSEEK_API_KEY is required}"
+      DEEPSEEK_MODEL: "${DEEPSEEK_MODEL:-deepseek-chat}"
+      DEEPSEEK_BASE_URL: "${DEEPSEEK_BASE_URL:-https://api.deepseek.com}"
+    depends_on:
+      knowledge-mcp: {condition: service_healthy}
+      github-mcp: {condition: service_healthy}
+      artifact-mcp: {condition: service_healthy}
+    ports: ["127.0.0.1:8091:8091"]
+    networks: [day20-internal]
+    volumes: ["day20-data:/data:ro"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp:size=16m,mode=1777"]
+    healthcheck: {test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1:8091/healthz"], interval: 10s, timeout: 3s, retries: 5}
+networks:
+  day20-internal: {name: day20-internal}
+volumes:
+  day20-data: {name: day20-data}

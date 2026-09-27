@@ -1,0 +1,8 @@
+.git
+artifacts
+server
+*.mp4
+deploy*.sh
+remote-demo.sh
+verify-remote.sh
+README.md

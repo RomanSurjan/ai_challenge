@@ -1,0 +1,97 @@
+name: day18
+
+services:
+  github-mcp:
+    build:
+      context: .
+    image: day18-agent:local
+    container_name: day18-github-mcp
+    command: ["/usr/local/bin/github-mcp-server"]
+    entrypoint: []
+    restart: unless-stopped
+    environment:
+      MCP_ADDR: ":8083"
+      DATABASE_PATH: "/data/day18.db"
+      GITHUB_TOKEN: "${GITHUB_TOKEN:-}"
+    ports:
+      - "127.0.0.1:8083:8083"
+    networks:
+      - day18-internal
+    read_only: true
+    volumes:
+      - day18-data:/data
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8083/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  currency-mcp:
+    image: day18-agent:local
+    container_name: day18-currency-mcp
+    command: ["/usr/local/bin/currency-mcp-server"]
+    entrypoint: []
+    restart: unless-stopped
+    environment:
+      MCP_ADDR: ":8085"
+      DATABASE_PATH: "/data/currency.db"
+      FRANKFURTER_BASE_URL: "${FRANKFURTER_BASE_URL:-https://api.frankfurter.dev}"
+    ports:
+      - "127.0.0.1:8085:8085"
+    networks:
+      - day18-internal
+    read_only: true
+    volumes:
+      - day18-data:/data
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8085/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  agent-app:
+    image: day18-agent:local
+    container_name: day18-agent-app
+    restart: unless-stopped
+    command: ["-serve", "-addr", ":8080"]
+    environment:
+      APP_ADDR: ":8080"
+      MCP_SERVERS: "github=http://github-mcp:8083/mcp,currency=http://currency-mcp:8085/mcp"
+      DEEPSEEK_API_KEY: "${DEEPSEEK_API_KEY:?DEEPSEEK_API_KEY is required}"
+      DEEPSEEK_MODEL: "${DEEPSEEK_MODEL:-deepseek-chat}"
+      DEEPSEEK_BASE_URL: "${DEEPSEEK_BASE_URL:-https://api.deepseek.com}"
+    depends_on:
+      github-mcp:
+        condition: service_healthy
+      currency-mcp:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8084:8080"
+    networks:
+      - day18-internal
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+networks:
+  day18-internal:
+    name: day18-internal
+
+volumes:
+  day18-data:
+    name: day18-data

@@ -1,0 +1,69 @@
+name: day19
+
+services:
+  mcp-server:
+    build:
+      context: .
+    image: day19-composition:local
+    container_name: day19-mcp-server
+    command: ["/usr/local/bin/mcp-server"]
+    restart: unless-stopped
+    environment:
+      MCP_ADDR: ":8086"
+      OUTPUT_DIR: "/data/outputs"
+    ports:
+      - "127.0.0.1:8086:8086"
+    networks:
+      - day19-internal
+    volumes:
+      - day19-data:/data
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8086/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  agent-app:
+    image: day19-composition:local
+    container_name: day19-agent-app
+    command: ["/usr/local/bin/agent-app"]
+    restart: unless-stopped
+    environment:
+      APP_ADDR: ":8087"
+      MCP_ENDPOINT: "http://mcp-server:8086/mcp"
+      OUTPUT_DIR: "/data/outputs"
+      DEEPSEEK_API_KEY: "${DEEPSEEK_API_KEY:?DEEPSEEK_API_KEY is required}"
+      DEEPSEEK_MODEL: "${DEEPSEEK_MODEL:-deepseek-chat}"
+      DEEPSEEK_BASE_URL: "${DEEPSEEK_BASE_URL:-https://api.deepseek.com}"
+    depends_on:
+      mcp-server:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8087:8087"
+    networks:
+      - day19-internal
+    volumes:
+      - day19-data:/data:ro
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8087/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+networks:
+  day19-internal:
+    name: day19-internal
+
+volumes:
+  day19-data:
+    name: day19-data

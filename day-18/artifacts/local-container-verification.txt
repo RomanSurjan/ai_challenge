@@ -1,0 +1,3 @@
+local container verification: PASS
+schedule persisted with 2 snapshots across MCP container restart
+test schedule cancelled
