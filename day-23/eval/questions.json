@@ -1,0 +1,117 @@
+[
+  {
+    "id": "q01-multi-mcp-routing",
+    "question": "Как единый агент объединяет каталоги нескольких MCP-серверов и маршрутизирует tool calls владельцу инструмента?",
+    "expected_answer": "Агент получает tools/list каждой MCP-сессии, объединяет определения для модели и хранит отображение имени инструмента на сессию-владельца; выбранный моделью tools/call отправляется только этому владельцу.",
+    "required_concepts": [
+      {"name": "агрегация tools/list", "alternatives": ["объединённый tools/list", "объединяет каталоги", "собирает инструменты"]},
+      {"name": "таблица владельцев", "alternatives": ["владельца каждого инструмента", "таблица владельцев", "отображение имени инструмента"]},
+      {"name": "маршрутизация в MCP-сессию", "alternatives": ["соответствующую mcp-сессию", "сессию-владельца", "нужному mcp-серверу"]}
+    ],
+    "expected_sources": ["day-18/README.md", "day-18/internal/mcpmulti/connector.go", "day-20/README.md", "day-20/internal/mcpclient/client.go"]
+  },
+  {
+    "id": "q02-monitor-claim",
+    "question": "Как планировщик мониторинга атомарно захватывает просроченный запуск и не допускает дубликаты после перезапуска?",
+    "expected_answer": "ClaimDueRun работает в транзакции: проверяет активное расписание и срок, создаёт running-запуск и переносит next_run. Уникальность пары schedule_id/scheduled_for блокирует дубль, а SQLite сохраняет состояние между перезапусками.",
+    "required_concepts": [
+      {"name": "транзакционный claim", "alternatives": ["в транзакции", "транзакционный", "атомарно"]},
+      {"name": "уникальность scheduled run", "alternatives": ["unique(schedule_id, scheduled_for)", "уникальность пары", "schedule_id и scheduled_for"]},
+      {"name": "персистентность SQLite", "alternatives": ["sqlite", "сохраняется в базе", "после перезапуска"]}
+    ],
+    "expected_sources": ["day-18/internal/store/store.go", "day-18/internal/currencystore/store.go", "day-18/README.md"]
+  },
+  {
+    "id": "q03-decimal-currency",
+    "question": "Почему валютные суммы не вычисляются через float64 и как реализована точная десятичная арифметика?",
+    "expected_answer": "float64 даёт двоичные ошибки округления. Decimal разбирает строку в целочисленный коэффициент и десятичный scale, выполняет операции целыми числами и форматирует результат без потери десятичных знаков.",
+    "required_concepts": [
+      {"name": "ошибка float64", "alternatives": ["ошибки округления", "двоичное представление", "двоичную систему", "погрешност", "проблем с плавающей точкой", "float64 неточ"]},
+      {"name": "целочисленное хранение", "alternatives": ["целочисленный коэффициент", "целыми числами", "int64"]},
+      {"name": "десятичный scale", "alternatives": ["scale", "масштаб", "число знаков после запятой"]}
+    ],
+    "expected_sources": ["day-18/internal/decimal/decimal.go", "day-18/README.md"]
+  },
+  {
+    "id": "q04-github-http-safety",
+    "question": "Какие ограничения и проверки применяются при запросе метаданных публичного репозитория GitHub?",
+    "expected_answer": "Входные owner/repository валидируются, запрос имеет timeout и обязательные GitHub headers, тело ограничено по размеру. Клиент проверяет HTTP-коды и rate-limit headers, обязательные поля JSON и отклоняет private-репозитории.",
+    "required_concepts": [
+      {"name": "валидация owner/repository", "alternatives": ["owner и repository", "валидац", "проверяются имена"]},
+      {"name": "лимиты HTTP", "alternatives": ["timeout", "таймаут", "ограничение размера"]},
+      {"name": "rate limit", "alternatives": ["rate limit", "rate-limit", "x-ratelimit-remaining"]},
+      {"name": "запрет private", "alternatives": ["private", "приватн"]}
+    ],
+    "expected_sources": ["day-17/internal/githubapi/client.go", "day-17/README.md", "day-18/internal/githubapi/client.go"]
+  },
+  {
+    "id": "q05-agent-tool-loop",
+    "question": "Как агент сохраняет tool_call_id и передаёт результат MCP-инструмента обратно модели в следующем раунде?",
+    "expected_answer": "После assistant-сообщения с tool_calls агент вызывает MCP, сериализует результат и добавляет role=tool с исходным tool_call_id в историю; затем отправляет всю историю в следующий sampling-вызов модели.",
+    "required_concepts": [
+      {"name": "исходный tool_call_id", "alternatives": ["исходным tool_call_id", "тот же tool_call_id", "сохраняет tool_call_id"]},
+      {"name": "role=tool", "alternatives": ["role=tool", "ролью tool", "сообщение tool"]},
+      {"name": "следующий sampling", "alternatives": ["следующий sampling", "следующем раунде", "повторно вызывает модель"]}
+    ],
+    "expected_sources": ["day-17/internal/agent/agent.go", "day-17/README.md", "day-19/internal/agent/agent.go", "day-20/internal/agent/agent.go"]
+  },
+  {
+    "id": "q06-pipeline-integrity",
+    "question": "Как в композиции search summarize save_to_file проверяется целостность данных между этапами?",
+    "expected_answer": "Pipeline state разрешает фиксированный порядок. summarize обязан получить точные query/documents результата search, а save_to_file — точные query/summary/sources результата summarize; сохранённый Markdown сопровождается SHA-256.",
+    "required_concepts": [
+      {"name": "фиксированный порядок", "alternatives": ["фиксированный порядок", "search → summarize → save", "порядок этапов"]},
+      {"name": "точные данные search", "alternatives": ["точные query и documents", "точные документы", "без изменений", "точный результат search"]},
+      {"name": "точные данные summarize", "alternatives": ["точные query, summary и sources", "точный результат summarize", "summary и sources", "`summary` и `sources`"]},
+      {"name": "SHA-256", "alternatives": ["sha-256", "sha256", "хеш"]}
+    ],
+    "expected_sources": ["day-19/README.md", "day-19/internal/pipeline/server.go", "day-19/internal/pipeline/summarize.go", "day-19/internal/pipeline/save.go"]
+  },
+  {
+    "id": "q07-artifact-sandbox",
+    "question": "Как Artifact MCP безопасно сохраняет отчёты и предотвращает выход пути за разрешённый каталог?",
+    "expected_answer": "Store принимает только безопасное относительное имя .md, запрещает absolute path, .. и разделители, затем сравнивает вычисленный каталог с OutputDir. Запись идёт через временный файл, fsync и atomic rename с лимитом размера.",
+    "required_concepts": [
+      {"name": "валидация имени", "alternatives": ["безопасное относительное", "safe relative", "регулярн"]},
+      {"name": "защита от traversal", "alternatives": ["..", "path traversal", "выход за каталог"]},
+      {"name": "atomic write", "alternatives": ["atomic rename", "атомарн", "временный файл"]},
+      {"name": "лимит размера", "alternatives": ["лимит размера", "maxmarkdown", "512"]}
+    ],
+    "expected_sources": ["day-20/internal/artifact/store.go", "day-20/internal/artifact/server.go", "day-20/README.md"]
+  },
+  {
+    "id": "q08-session-history",
+    "question": "Как web-приложение хранит историю диалога по session cookie и что делает кнопка нового диалога?",
+    "expected_answer": "Случайный session ID хранится в HttpOnly SameSite cookie, а серверная map содержит ограниченное число последних turn-ов с mutex. Новый диалог удаляет conversation по ID и истекает cookie, не затрагивая MCP-расписания.",
+    "required_concepts": [
+      {"name": "HttpOnly session cookie", "alternatives": ["httponly", "session cookie", "cookie"]},
+      {"name": "серверная ограниченная история", "alternatives": ["последних 12", "ограниченную историю", "turn"]},
+      {"name": "reset диалога", "alternatives": ["удаляет сессию", "очищает историю", "истекает cookie"]},
+      {"name": "расписания сохраняются", "alternatives": ["не удаляет расписания", "расписания не затрагиваются", "mcp-расписания"]}
+    ],
+    "expected_sources": ["day-18/internal/web/sessions.go", "day-18/internal/web/server.go", "day-18/README.md"]
+  },
+  {
+    "id": "q09-mcp-handshake",
+    "question": "Как минимальный Go MCP-клиент устанавливает соединение и получает список tools с пагинацией?",
+    "expected_answer": "Клиент создаёт официальный mcp.Client и StreamableClientTransport, вызывает Connect для initialize handshake и читает InitializeResult. Затем повторяет session.ListTools, передавая NextCursor до пустого cursor.",
+    "required_concepts": [
+      {"name": "Streamable HTTP transport", "alternatives": ["streamable", "streamableclienttransport"]},
+      {"name": "initialize handshake", "alternatives": ["initialize", "handshake", "connect"]},
+      {"name": "pagination cursor", "alternatives": ["nextcursor", "cursor", "пагинац"]}
+    ],
+    "expected_sources": ["day-16/internal/mcpdemo/client.go", "day-16/README.md"]
+  },
+  {
+    "id": "q10-wikipedia-search",
+    "question": "Как knowledge search обращается к Wikipedia, ограничивает ответ и обрабатывает пустые результаты?",
+    "expected_answer": "Клиент вызывает MediaWiki action=query с generator=search и extracts|info, валидирует язык/limit, timeout и HTTP/JSON/API errors. Тело ограничено, тексты обрезаются, некорректные документы отбрасываются, а пустой список возвращается как успешный count=0.",
+    "required_concepts": [
+      {"name": "MediaWiki query", "alternatives": ["generator=search", "mediawiki", "action=query"]},
+      {"name": "ограничение ответа", "alternatives": ["2 mib", "огранич", "limitreader"]},
+      {"name": "валидация документов", "alternatives": ["отбрасываются", "https", "wikipedia.org"]},
+      {"name": "пустой успешный результат", "alternatives": ["count=0", "пустой список", "ноль документов"]}
+    ],
+    "expected_sources": ["day-19/internal/pipeline/wikipedia.go", "day-19/internal/pipeline/wikipedia_test.go"]
+  }
+]

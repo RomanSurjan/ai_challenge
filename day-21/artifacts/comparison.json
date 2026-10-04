@@ -1,0 +1,209 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-10-04T17:31:04.70546Z",
+  "corpus_id": "b7d4f83675e1fc7c8d1c112bee933610e15ecd5aa5ade9e6d30a7bbc070cc451",
+  "model": "qwen3-embedding:0.6b",
+  "top_k": 5,
+  "questions": 12,
+  "fixed": {
+    "strategy": "fixed",
+    "metrics": {
+      "hit_at_1": 0.25,
+      "hit_at_5": 1,
+      "mrr_at_5": 0.5402777777777777,
+      "average_top_1_similarity": 0.5768992701602108
+    },
+    "chunks": 136,
+    "min_chunk_words": 10,
+    "average_chunk_words": 387.77941176470586,
+    "max_chunk_words": 700,
+    "build_duration_ms": 67414,
+    "json_size_bytes": 3605349
+  },
+  "structural": {
+    "strategy": "structural",
+    "metrics": {
+      "hit_at_1": 0.4166666666666667,
+      "hit_at_5": 0.8333333333333334,
+      "mrr_at_5": 0.611111111111111,
+      "average_top_1_similarity": 0.6609057277581876
+    },
+    "chunks": 1025,
+    "min_chunk_words": 2,
+    "average_chunk_words": 48.72,
+    "max_chunk_words": 700,
+    "build_duration_ms": 70647,
+    "json_size_bytes": 23407810
+  },
+  "examples": [
+    {
+      "question_id": "q01-multi-mcp-routing",
+      "query": "Как единый агент объединяет каталоги нескольких MCP-серверов и маршрутизирует tool calls владельцу инструмента?",
+      "fixed": [
+        {
+          "rank": 1,
+          "score": 0.663454823004227,
+          "chunk_id": "fixed-d00587f2e64b302c5fd98749",
+          "source": "day-18/DEMO.md",
+          "section": "Document",
+          "snippet": "# Day 18 — демонстрация единого агента Сценарий доказывает, что один агент подключается к двум независимым MCP, видит оба набора инструментов и направляет вызовы в правильный сервер. ## 1. Запуск ```bash cd /Users/romans…"
+        },
+        {
+          "rank": 2,
+          "score": 0.5968015702178885,
+          "chunk_id": "fixed-0a4216e6d920fe959a1325f3",
+          "source": "day-20/README.md",
+          "section": "Document",
+          "snippet": "# Day 20 — Orchestration MCP Самостоятельный Go-модуль с тремя независимыми Streamable HTTP MCP-серверами и агентом DeepSeek. Агент получает объединённый `tools/list`, сохраняет владельца каждого инструмента и маршрутизи…"
+        },
+        {
+          "rank": 3,
+          "score": 0.5774023928180796,
+          "chunk_id": "fixed-0d0d7a2cc834411762381d1c",
+          "source": "day-18/README.md",
+          "section": "Document",
+          "snippet": "# Day 18 — Unified persistent MCP agent Один Go-проект и один DeepSeek-агент для двух задач: постоянный мониторинг публичных GitHub-репозиториев и справочных валютных курсов. GitHub и валюты обслуживают два независимых S…"
+        }
+      ],
+      "structural": [
+        {
+          "rank": 1,
+          "score": 0.7182587435176594,
+          "chunk_id": "structural-233b0f6da63ac99f66752b43",
+          "source": "day-18/DEMO.md",
+          "section": "Day 18 — демонстрация единого агента",
+          "snippet": "# Day 18 — демонстрация единого агента Сценарий доказывает, что один агент подключается к двум независимым MCP, видит оба набора инструментов и направляет вызовы в правильный сервер."
+        },
+        {
+          "rank": 2,
+          "score": 0.6197974566573209,
+          "chunk_id": "structural-9adc7c97de777669396a5699",
+          "source": "day-20/README.md",
+          "section": "Day 20 — Orchestration MCP",
+          "snippet": "# Day 20 — Orchestration MCP Самостоятельный Go-модуль с тремя независимыми Streamable HTTP MCP-серверами и агентом DeepSeek. Агент получает объединённый `tools/list`, сохраняет владельца каждого инструмента и маршрутизи…"
+        },
+        {
+          "rank": 3,
+          "score": 0.6005167220836319,
+          "chunk_id": "structural-4e3a63032d3beaf99ea33874",
+          "source": "day-18/README.md",
+          "section": "Day 18 — Unified persistent MCP agent",
+          "snippet": "# Day 18 — Unified persistent MCP agent Один Go-проект и один DeepSeek-агент для двух задач: постоянный мониторинг публичных GitHub-репозиториев и справочных валютных курсов. GitHub и валюты обслуживают два независимых S…"
+        }
+      ]
+    },
+    {
+      "question_id": "q02-monitor-claim",
+      "query": "Как планировщик мониторинга атомарно захватывает просроченный запуск и не допускает дубликаты после перезапуска?",
+      "fixed": [
+        {
+          "rank": 1,
+          "score": 0.4534965845664266,
+          "chunk_id": "fixed-d00587f2e64b302c5fd98749",
+          "source": "day-18/DEMO.md",
+          "section": "Document",
+          "snippet": "# Day 18 — демонстрация единого агента Сценарий доказывает, что один агент подключается к двум независимым MCP, видит оба набора инструментов и направляет вызовы в правильный сервер. ## 1. Запуск ```bash cd /Users/romans…"
+        },
+        {
+          "rank": 2,
+          "score": 0.4053101234281146,
+          "chunk_id": "fixed-c958773b0f4cc81617007e7e",
+          "source": "day-18/internal/mcpgithub/server.go",
+          "section": "Document",
+          "snippet": "monitors\", Description: \"List persistent repository monitor schedules in deterministic creation order. Optionally filter by active, completed, or cancelled status.\", InputSchema: listInputSchema(), OutputSchema: listOutp…"
+        },
+        {
+          "rank": 3,
+          "score": 0.36923278993721814,
+          "chunk_id": "fixed-e48aa70877a59f665e94a0dc",
+          "source": "day-18/internal/store/store_test.go",
+          "section": "Document",
+          "snippet": "many.LastSuccessfulSnapshot.Stars != 14 || many.Schedule.LastError != \"\" { t.Fatalf(\"last snapshot/error = %+v\", many) } } func TestStoreConcurrentClaimIsUnique(t *testing.T) { ctx := context.Background() now := time.Dat…"
+        }
+      ],
+      "structural": [
+        {
+          "rank": 1,
+          "score": 0.5724912194761278,
+          "chunk_id": "structural-48f25c926c4b8f19033a5f25",
+          "source": "day-18/README.md",
+          "section": "Day 18 — Unified persistent MCP agent \u003e Надёжность",
+          "snippet": "## Надёжность Оба планировщика используют постоянные SQLite-расписания, атомарный claim и уникальную пару `(schedule_id, scheduled_for)`. Первый запуск назначается сразу; пропущенные интервалы не создают лавину catch-up…"
+        },
+        {
+          "rank": 2,
+          "score": 0.4915009044284478,
+          "chunk_id": "structural-19c812c780af19908167c6c8",
+          "source": "day-18/DEMO.md",
+          "section": "Day 18 — демонстрация единого агента \u003e 3. GitHub-монитор",
+          "snippet": "## 3. GitHub-монитор \u003e Создай мониторинг репозитория modelcontextprotocol/go-sdk раз в минуту и останови после двух запусков. Проверьте в trace вызов `schedule_repository_monitor`, настоящий `schedule_id` и карточку в ко…"
+        },
+        {
+          "rank": 3,
+          "score": 0.4409869801405863,
+          "chunk_id": "structural-f7e892bda05c23223164b190",
+          "source": "day-18/DEMO.md",
+          "section": "Day 18 — демонстрация единого агента \u003e 8. Отмена",
+          "snippet": "## 8. Отмена Создайте неограниченный монитор, затем попросите: \u003e Останови мониторинг GBP/EUR и покажи итоговое состояние. Агент находит ID через `list_exchange_rate_monitors` и вызывает `cancel_exchange_rate_monitor`. По…"
+        }
+      ]
+    },
+    {
+      "question_id": "q03-decimal-currency",
+      "query": "Почему валютные суммы не вычисляются через float64 и как реализована точная десятичная арифметика?",
+      "fixed": [
+        {
+          "rank": 1,
+          "score": 0.5456759355631383,
+          "chunk_id": "fixed-022d958a07b297e2fd76a7a6",
+          "source": "day-18/internal/decimal/decimal_test.go",
+          "section": "Document",
+          "snippet": "package decimal import \"testing\" func TestExactDecimalArithmetic(t *testing.T) { for input, want := range map[string]string{ \"001.2300\": \"1.23\", \"1e-3\": \"0.001\", \"1.25E2\": \"125\", \"-0.000\": \"0\", } { got, err := Parse(inpu…"
+        },
+        {
+          "rank": 2,
+          "score": 0.5030662494681495,
+          "chunk_id": "fixed-61cb9a3e13fe82f5bf3db8bf",
+          "source": "day-18/internal/decimal/decimal.go",
+          "section": "Document",
+          "snippet": "// Package decimal implements the small, exact base-10 arithmetic surface the // application needs. It deliberately avoids binary floating-point values. package decimal import ( \"errors\" \"fmt\" \"math/big\" \"regexp\" \"string…"
+        },
+        {
+          "rank": 3,
+          "score": 0.49126445236692473,
+          "chunk_id": "fixed-0c6e31d15bef4bca2062b970",
+          "source": "day-18/internal/mcpcurrency/server_test.go",
+          "section": "Document",
+          "snippet": "1}) if err != nil || !invalid.IsError || !strings.Contains(invalid.Text, \"minimum\") { t.Fatalf(\"invalid=%+v %v\", invalid, err) } missing, err := session.CallTool(context.Background(), SummaryToolName, map[string]any{\"sch…"
+        }
+      ],
+      "structural": [
+        {
+          "rank": 1,
+          "score": 0.5542196951557264,
+          "chunk_id": "structural-3e989fc26e10f4c2dbf1de46",
+          "source": "day-18/internal/decimal/decimal_test.go",
+          "section": "func TestExactDecimalArithmetic",
+          "snippet": "func TestExactDecimalArithmetic(t *testing.T) { for input, want := range map[string]string{ \"001.2300\": \"1.23\", \"1e-3\": \"0.001\", \"1.25E2\": \"125\", \"-0.000\": \"0\", } { got, err := Parse(input) if err != nil || got.String()…"
+        },
+        {
+          "rank": 2,
+          "score": 0.5380361006443646,
+          "chunk_id": "structural-6089ea73371c5178d1ca663e",
+          "source": "day-18/internal/decimal/decimal.go",
+          "section": "package decimal",
+          "snippet": "// Package decimal implements the small, exact base-10 arithmetic surface the // application needs. It deliberately avoids binary floating-point values. package decimal import ( \"errors\" \"fmt\" \"math/big\" \"regexp\" \"string…"
+        },
+        {
+          "rank": 3,
+          "score": 0.5247100273237872,
+          "chunk_id": "structural-0cd0c4d97ddd44fd54b9c54a",
+          "source": "day-18/internal/decimal/decimal_test.go",
+          "section": "package decimal",
+          "snippet": "package decimal import \"testing\""
+        }
+      ]
+    }
+  ],
+  "conclusion": "Structural chunking ranked relevant chunks earlier on this evaluation set (higher MRR@5)."
+}

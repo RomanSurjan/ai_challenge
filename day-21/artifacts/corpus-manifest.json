@@ -1,0 +1,976 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-10-04T17:28:45.430757Z",
+  "corpus_id": "b7d4f83675e1fc7c8d1c112bee933610e15ecd5aa5ade9e6d30a7bbc070cc451",
+  "inputs": [
+    "../day-16",
+    "../day-17",
+    "../day-18",
+    "../day-19",
+    "../day-20"
+  ],
+  "stats": {
+    "documents": 106,
+    "characters": 485464,
+    "words": 49738,
+    "lines": 13075,
+    "pdf_pages": 0,
+    "estimated_pages": 124.345
+  },
+  "documents": [
+    {
+      "source": "day-16/README.md",
+      "title": "README.md",
+      "type": "markdown",
+      "character_count": 3352,
+      "word_count": 405,
+      "line_count": 141,
+      "sha256": "d197676b4aba2274a1f591b57ce112130dc74e3f69bef82e0e1951ac33656fe2"
+    },
+    {
+      "source": "day-16/cmd/client/main.go",
+      "title": "main.go",
+      "type": "go",
+      "character_count": 858,
+      "word_count": 83,
+      "line_count": 37,
+      "sha256": "3af833e6363e606ac33751c9ed364efb15d7140b1fd417565493708447f2ef48"
+    },
+    {
+      "source": "day-16/cmd/server/main.go",
+      "title": "main.go",
+      "type": "go",
+      "character_count": 1057,
+      "word_count": 111,
+      "line_count": 48,
+      "sha256": "9f4a18abe252f7ba42182dba08d56892e72315f612eec4c775c9574a4301b7b4"
+    },
+    {
+      "source": "day-16/internal/mcpdemo/client.go",
+      "title": "client.go",
+      "type": "go",
+      "character_count": 1561,
+      "word_count": 168,
+      "line_count": 63,
+      "sha256": "f878fefc8730a0333fa4ac5c5455e4231918fb5defea20c46d3149879deb5f65"
+    },
+    {
+      "source": "day-16/internal/mcpdemo/integration_test.go",
+      "title": "integration_test.go",
+      "type": "go",
+      "character_count": 1202,
+      "word_count": 133,
+      "line_count": 48,
+      "sha256": "f41729bad32641863890c91d24baf4c3795bbd0066d6b1f5a5ed20a897b1989a"
+    },
+    {
+      "source": "day-16/internal/mcpdemo/server.go",
+      "title": "server.go",
+      "type": "go",
+      "character_count": 2002,
+      "word_count": 206,
+      "line_count": 71,
+      "sha256": "261f7e5089a7abaf2b678535cef2cba0ae011bdcef731a7a27d0ebc970465e4b"
+    },
+    {
+      "source": "day-17/README.md",
+      "title": "README.md",
+      "type": "markdown",
+      "character_count": 8321,
+      "word_count": 903,
+      "line_count": 263,
+      "sha256": "3dd61d786ba504c8665733428351abc2713f8040c7cc3770a008a9e1552424af"
+    },
+    {
+      "source": "day-17/cmd/agent-app/main.go",
+      "title": "main.go",
+      "type": "go",
+      "character_count": 3426,
+      "word_count": 363,
+      "line_count": 119,
+      "sha256": "d66c9edc0ee9fc97f2f809df2824301ea05e350feb9eb1961e204e4534c5d879"
+    },
+    {
+      "source": "day-17/cmd/mcp-server/main.go",
+      "title": "main.go",
+      "type": "go",
+      "character_count": 1027,
+      "word_count": 102,
+      "line_count": 39,
+      "sha256": "0968538281dda6b1753ec566f79de7dc5cb03e5083a8e97d70ab250e6e2e830e"
+    },
+    {
+      "source": "day-17/internal/agent/agent.go",
+      "title": "agent.go",
+      "type": "go",
+      "character_count": 5766,
+      "word_count": 708,
+      "line_count": 184,
+      "sha256": "88f7f49c8ac68e6b9351b66580ae1e710f44dbd12ec2dd3ab936c35043cd44f6"
+    },
+    {
+      "source": "day-17/internal/agent/agent_test.go",
+      "title": "agent_test.go",
+      "type": "go",
+      "character_count": 3670,
+      "word_count": 362,
+      "line_count": 88,
+      "sha256": "5d610f5c82eb334b4a81b08f29e26a00980ee8e26bc74b69f283df3f870d7b91"
+    },
+    {
+      "source": "day-17/internal/agent/deepseek.go",
+      "title": "deepseek.go",
+      "type": "go",
+      "character_count": 2524,
+      "word_count": 293,
+      "line_count": 88,
+      "sha256": "34e626308f28ea50909a115f124fb63979a60d48ddca3cbab21b0dc1f0a4dc63"
+    },
+    {
+      "source": "day-17/internal/agent/types.go",
+      "title": "types.go",
+      "type": "go",
+      "character_count": 2348,
+      "word_count": 193,
+      "line_count": 83,
+      "sha256": "1f86dd218a28da1fae9708c69faa64f0d86a2281e46dc9c38941b29ce373f983"
+    },
+    {
+      "source": "day-17/internal/githubapi/client.go",
+      "title": "client.go",
+      "type": "go",
+      "character_count": 7736,
+      "word_count": 807,
+      "line_count": 249,
+      "sha256": "361e2a01310aa61fb9d348ea19b5de2e891dafe7d72130dbee66d581fb88a77c"
+    },
+    {
+      "source": "day-17/internal/githubapi/client_test.go",
+      "title": "client_test.go",
+      "type": "go",
+      "character_count": 8197,
+      "word_count": 699,
+      "line_count": 187,
+      "sha256": "86beb14118790d594de70a6c60c86f2a84cac6d09159e26b5d5a278353a3b85a"
+    },
+    {
+      "source": "day-17/internal/mcpgithub/client.go",
+      "title": "client.go",
+      "type": "go",
+      "character_count": 2894,
+      "word_count": 333,
+      "line_count": 104,
+      "sha256": "55a18ff7edbe193fed8afa0715993eabaa9afc3b91349ed626a69357c918d893"
+    },
+    {
+      "source": "day-17/internal/mcpgithub/server.go",
+      "title": "server.go",
+      "type": "go",
+      "character_count": 3582,
+      "word_count": 336,
+      "line_count": 93,
+      "sha256": "3fe2d61e889745e9a57faf35cb9336acb5f941ba2b15463880883b3095b471bd"
+    },
+    {
+      "source": "day-17/internal/mcpgithub/server_test.go",
+      "title": "server_test.go",
+      "type": "go",
+      "character_count": 6343,
+      "word_count": 649,
+      "line_count": 159,
+      "sha256": "7df377a5e3289b4816eb15c53368c6933f599e41eff13ffe67887b240caa5f91"
+    },
+    {
+      "source": "day-17/internal/web/frontend.go",
+      "title": "frontend.go",
+      "type": "go",
+      "character_count": 81,
+      "word_count": 10,
+      "line_count": 6,
+      "sha256": "235711579fea656737b6fd3c1bb4e751fdaacdd6f883a17b8bcd490f7188f949"
+    },
+    {
+      "source": "day-17/internal/web/server.go",
+      "title": "server.go",
+      "type": "go",
+      "character_count": 2537,
+      "word_count": 205,
+      "line_count": 75,
+      "sha256": "7fb172b38f14eb095dfcc70fd4e68c21882a7fe7f0e0c5de040d230b5943239a"
+    },
+    {
+      "source": "day-18/DEMO.md",
+      "title": "DEMO.md",
+      "type": "markdown",
+      "character_count": 3056,
+      "word_count": 391,
+      "line_count": 73,
+      "sha256": "b750588c7dbbd7a895c55ccc065ae9ccc9337048f95f35d4b009526369728b43"
+    },
+    {
+      "source": "day-18/README.md",
+      "title": "README.md",
+      "type": "markdown",
+      "character_count": 4959,
+      "word_count": 528,
+      "line_count": 108,
+      "sha256": "952cb378b043fbe111179b97331de68bfa06a1fb16021cd08a5894c000fa12d7"
+    },
+    {
+      "source": "day-18/cmd/agent-app/main.go",
+      "title": "main.go",
+      "type": "go",
+      "character_count": 4843,
+      "word_count": 522,
+      "line_count": 153,
+      "sha256": "0f888a5f2feb1926785adafa5cbc67037a6f44932e385930c580ff1f13688cf1"
+    },
+    {
+      "source": "day-18/cmd/agent-app/main_test.go",
+      "title": "main_test.go",
+      "type": "go",
+      "character_count": 690,
+      "word_count": 68,
+      "line_count": 21,
+      "sha256": "dd8845e54064831bc5ec0456a3ea9f6390726d54f0e14b1e74d6cf45cb1cb8b6"
+    },
+    {
+      "source": "day-18/cmd/currency-mcp-server/main.go",
+      "title": "main.go",
+      "type": "go",
+      "character_count": 1979,
+      "word_count": 209,
+      "line_count": 72,
+      "sha256": "96b4269d6e1bea674f798c94b49b921db21793b67cf62d94ef21319925e37df6"
+    },
+    {
+      "source": "day-18/cmd/github-mcp-server/main.go",
+      "title": "main.go",
+      "type": "go",
+      "character_count": 1808,
+      "word_count": 195,
+      "line_count": 69,
+      "sha256": "27a0ccccd7a442bf691eb4373391cb7eb5769e4d8553c597e2e155743d3db7b4"
+    },
+    {
+      "source": "day-18/internal/agent/agent.go",
+      "title": "agent.go",
+      "type": "go",
+      "character_count": 6642,
+      "word_count": 806,
+      "line_count": 195,
+      "sha256": "0c73397fbb67a066f87b1a9a32b5b9add61d3d2e3183484ca44e39034a248b7c"
+    },
+    {
+      "source": "day-18/internal/agent/agent_test.go",
+      "title": "agent_test.go",
+      "type": "go",
+      "character_count": 5749,
+      "word_count": 524,
+      "line_count": 117,
+      "sha256": "0be39070f0156fe1be837cad786be2e407edf154634a5b0c3cdba36a8ccd606e"
+    },
+    {
+      "source": "day-18/internal/agent/deepseek.go",
+      "title": "deepseek.go",
+      "type": "go",
+      "character_count": 3140,
+      "word_count": 373,
+      "line_count": 110,
+      "sha256": "1d41a303549fbcb993f53e31c06932f3fca2048944cc5b9c220a4728c05f7d3e"
+    },
+    {
+      "source": "day-18/internal/agent/deepseek_test.go",
+      "title": "deepseek_test.go",
+      "type": "go",
+      "character_count": 1329,
+      "word_count": 130,
+      "line_count": 41,
+      "sha256": "3e4e957eb266f5ee358d325a34330cc557efb9f12a3a528d915eb4f1f196b401"
+    },
+    {
+      "source": "day-18/internal/agent/types.go",
+      "title": "types.go",
+      "type": "go",
+      "character_count": 2386,
+      "word_count": 196,
+      "line_count": 84,
+      "sha256": "e30269d0044355b52cc13784f2adad95b2ed85a48c732d79ba92a3f9864bb70d"
+    },
+    {
+      "source": "day-18/internal/currencyscheduler/scheduler.go",
+      "title": "scheduler.go",
+      "type": "go",
+      "character_count": 4244,
+      "word_count": 526,
+      "line_count": 171,
+      "sha256": "2bd0f77d9b0209b38c4d4f57dca64f366e72b34dfc06803774870a64f2d77769"
+    },
+    {
+      "source": "day-18/internal/currencyscheduler/scheduler_test.go",
+      "title": "scheduler_test.go",
+      "type": "go",
+      "character_count": 4233,
+      "word_count": 513,
+      "line_count": 144,
+      "sha256": "7c6f1474fa1abaf1e885ab50de29cae10245af04d4492c10a7a7676f44979ce2"
+    },
+    {
+      "source": "day-18/internal/currencystore/store.go",
+      "title": "store.go",
+      "type": "go",
+      "character_count": 17779,
+      "word_count": 2093,
+      "line_count": 540,
+      "sha256": "f233603d30c35afe9d954c2e285e2775e5727e7d6cf54189aaec1c174aeafa73"
+    },
+    {
+      "source": "day-18/internal/currencystore/store_test.go",
+      "title": "store_test.go",
+      "type": "go",
+      "character_count": 5337,
+      "word_count": 653,
+      "line_count": 164,
+      "sha256": "a11dc9e46ef97f1aaf2b5fa389aa8196fcadd031f589ed2ab406e6603ed71d1c"
+    },
+    {
+      "source": "day-18/internal/decimal/decimal.go",
+      "title": "decimal.go",
+      "type": "go",
+      "character_count": 4494,
+      "word_count": 545,
+      "line_count": 160,
+      "sha256": "bcc2cc623058cebf5146c5abddc326dec396deb2854d9bb8c94107691f6078bf"
+    },
+    {
+      "source": "day-18/internal/decimal/decimal_test.go",
+      "title": "decimal_test.go",
+      "type": "go",
+      "character_count": 706,
+      "word_count": 91,
+      "line_count": 23,
+      "sha256": "eb9569b623951b27ad6c3b5e58cb1a69c8196c513ae9bc462ada030fa047e681"
+    },
+    {
+      "source": "day-18/internal/frankfurter/client.go",
+      "title": "client.go",
+      "type": "go",
+      "character_count": 6718,
+      "word_count": 821,
+      "line_count": 226,
+      "sha256": "e8d18df69d132de5ed715085ddd0f447c1fe5aebb734bc4574096ee0b5a50467"
+    },
+    {
+      "source": "day-18/internal/frankfurter/client_test.go",
+      "title": "client_test.go",
+      "type": "go",
+      "character_count": 3074,
+      "word_count": 321,
+      "line_count": 83,
+      "sha256": "60aba46a2da684a261b0b108cf36dbd5c734a8f3ed92319cc3ba96479b7a5d27"
+    },
+    {
+      "source": "day-18/internal/githubapi/client.go",
+      "title": "client.go",
+      "type": "go",
+      "character_count": 7736,
+      "word_count": 807,
+      "line_count": 249,
+      "sha256": "35f34467b45933e77ad4966147061774cdb887bffd63052726be8e1eab590870"
+    },
+    {
+      "source": "day-18/internal/githubapi/client_test.go",
+      "title": "client_test.go",
+      "type": "go",
+      "character_count": 8197,
+      "word_count": 699,
+      "line_count": 187,
+      "sha256": "86beb14118790d594de70a6c60c86f2a84cac6d09159e26b5d5a278353a3b85a"
+    },
+    {
+      "source": "day-18/internal/mcpcurrency/client.go",
+      "title": "client.go",
+      "type": "go",
+      "character_count": 2965,
+      "word_count": 336,
+      "line_count": 96,
+      "sha256": "4fcc4cc77629b15290ef4ccd8f002382c61f6e6c23f5851b6a97a4f7c88c00f0"
+    },
+    {
+      "source": "day-18/internal/mcpcurrency/server.go",
+      "title": "server.go",
+      "type": "go",
+      "character_count": 22414,
+      "word_count": 1917,
+      "line_count": 357,
+      "sha256": "0c7c1f96bafbe132caa9cdfa3622633bb2574fffc5ef5a586073f7ba753d3772"
+    },
+    {
+      "source": "day-18/internal/mcpcurrency/server_test.go",
+      "title": "server_test.go",
+      "type": "go",
+      "character_count": 8229,
+      "word_count": 832,
+      "line_count": 219,
+      "sha256": "b8aa3e49a3c8702871b61da28a70bbd62358c41491451a72162e8574385f24ce"
+    },
+    {
+      "source": "day-18/internal/mcpgithub/client.go",
+      "title": "client.go",
+      "type": "go",
+      "character_count": 3028,
+      "word_count": 341,
+      "line_count": 106,
+      "sha256": "bfb3eabfe93bf314db9a18305775e693734ee8375cec7e2d3cbd06da46bc96e7"
+    },
+    {
+      "source": "day-18/internal/mcpgithub/server.go",
+      "title": "server.go",
+      "type": "go",
+      "character_count": 18800,
+      "word_count": 1520,
+      "line_count": 356,
+      "sha256": "d35088df0b80e6c91fdf3bcbd15c271cc1348f577f01fd9b48b4bf729d7832ac"
+    },
+    {
+      "source": "day-18/internal/mcpgithub/server_test.go",
+      "title": "server_test.go",
+      "type": "go",
+      "character_count": 6556,
+      "word_count": 702,
+      "line_count": 179,
+      "sha256": "70597b812fc8975e3110e8d989956969b95269658815c48a9647e76d3d79afa5"
+    },
+    {
+      "source": "day-18/internal/mcpmulti/connector.go",
+      "title": "connector.go",
+      "type": "go",
+      "character_count": 2390,
+      "word_count": 302,
+      "line_count": 89,
+      "sha256": "f0853fffc935d70972ce40479a83d0da902faea53ea2a9f62bf2a41bd1660786"
+    },
+    {
+      "source": "day-18/internal/mcpmulti/connector_test.go",
+      "title": "connector_test.go",
+      "type": "go",
+      "character_count": 2502,
+      "word_count": 269,
+      "line_count": 73,
+      "sha256": "61600da812ff85e7ce7c02442008ca627ee93bbdfd074efec534eb8346b39417"
+    },
+    {
+      "source": "day-18/internal/scheduler/scheduler.go",
+      "title": "scheduler.go",
+      "type": "go",
+      "character_count": 5387,
+      "word_count": 640,
+      "line_count": 208,
+      "sha256": "766ad87516a233f5a4acfd613690b8b689ffcf078b1c82a66f4b0da3deee4225"
+    },
+    {
+      "source": "day-18/internal/scheduler/scheduler_test.go",
+      "title": "scheduler_test.go",
+      "type": "go",
+      "character_count": 6427,
+      "word_count": 742,
+      "line_count": 195,
+      "sha256": "765cc7a0b7c223baa2418071dc7b9ba9862792c01722b37b29fb045c1495ddbf"
+    },
+    {
+      "source": "day-18/internal/store/store.go",
+      "title": "store.go",
+      "type": "go",
+      "character_count": 19516,
+      "word_count": 2323,
+      "line_count": 573,
+      "sha256": "3a4cc4f3bf6fb0eb09212554372e247a07137dbd1161f8f2dfc56ab3970e88e7"
+    },
+    {
+      "source": "day-18/internal/store/store_test.go",
+      "title": "store_test.go",
+      "type": "go",
+      "character_count": 6612,
+      "word_count": 860,
+      "line_count": 189,
+      "sha256": "9614f143d59350fddcfd1f2d4c35f933a2193b6c2bdfe1178cf31c7c325c58ba"
+    },
+    {
+      "source": "day-18/internal/web/frontend.go",
+      "title": "frontend.go",
+      "type": "go",
+      "character_count": 81,
+      "word_count": 10,
+      "line_count": 6,
+      "sha256": "235711579fea656737b6fd3c1bb4e751fdaacdd6f883a17b8bcd490f7188f949"
+    },
+    {
+      "source": "day-18/internal/web/server.go",
+      "title": "server.go",
+      "type": "go",
+      "character_count": 5925,
+      "word_count": 515,
+      "line_count": 174,
+      "sha256": "8111d29a0e0e4a2ccccac250ebe9b9b2993398997be91fb67ebbaad6caca400f"
+    },
+    {
+      "source": "day-18/internal/web/server_test.go",
+      "title": "server_test.go",
+      "type": "go",
+      "character_count": 2154,
+      "word_count": 185,
+      "line_count": 60,
+      "sha256": "9eefc7f0b39ae98b0363c8f64c797583a4d4a253d905be5a0c3609237c5a38c9"
+    },
+    {
+      "source": "day-18/internal/web/sessions.go",
+      "title": "sessions.go",
+      "type": "go",
+      "character_count": 2774,
+      "word_count": 311,
+      "line_count": 105,
+      "sha256": "7a1f7d49152f96b9db60e8863c2ab7ba30689c1e3bf820b71f6926503f9546aa"
+    },
+    {
+      "source": "day-18/internal/web/sessions_test.go",
+      "title": "sessions_test.go",
+      "type": "go",
+      "character_count": 1765,
+      "word_count": 163,
+      "line_count": 47,
+      "sha256": "901a8277a23590b184843689104e37a93c6573c739fa5176405fd85f5a958b28"
+    },
+    {
+      "source": "day-19/README.md",
+      "title": "README.md",
+      "type": "markdown",
+      "character_count": 1142,
+      "word_count": 141,
+      "line_count": 33,
+      "sha256": "319127587410197d2bf054fb57e1426ff9be73741c62bd510ecbf4000b4fc91d"
+    },
+    {
+      "source": "day-19/cmd/agent-app/main.go",
+      "title": "main.go",
+      "type": "go",
+      "character_count": 2025,
+      "word_count": 185,
+      "line_count": 51,
+      "sha256": "80299e260eb0de5462747954d33ed1637f8964169e82b21ccbba9da486955574"
+    },
+    {
+      "source": "day-19/cmd/mcp-server/main.go",
+      "title": "main.go",
+      "type": "go",
+      "character_count": 1298,
+      "word_count": 129,
+      "line_count": 43,
+      "sha256": "4589bc364ee2d49dfb81801bf5432df505e8c21ff75b0c41e5af69e289bda4c8"
+    },
+    {
+      "source": "day-19/internal/agent/agent.go",
+      "title": "agent.go",
+      "type": "go",
+      "character_count": 12553,
+      "word_count": 1470,
+      "line_count": 326,
+      "sha256": "4bc2886f20936a09d067f427f070d285106b02408ebe46e8903f0e78b590bb25"
+    },
+    {
+      "source": "day-19/internal/agent/agent_test.go",
+      "title": "agent_test.go",
+      "type": "go",
+      "character_count": 9287,
+      "word_count": 999,
+      "line_count": 256,
+      "sha256": "4f2c6ea9beecdfc0aa16a710f153aec8f502cdf084890a78febab2a83413a2a4"
+    },
+    {
+      "source": "day-19/internal/agent/deepseek.go",
+      "title": "deepseek.go",
+      "type": "go",
+      "character_count": 2603,
+      "word_count": 301,
+      "line_count": 88,
+      "sha256": "9af4528b5ec39ac8a16b4acd30928a5c1b0f81a2ebcac63083a56a505c32caef"
+    },
+    {
+      "source": "day-19/internal/agent/deepseek_test.go",
+      "title": "deepseek_test.go",
+      "type": "go",
+      "character_count": 1442,
+      "word_count": 142,
+      "line_count": 45,
+      "sha256": "9a57c8b8d97b809968ae0520c1ded38edce0e1b4b7bb321a1caf853ac14c011d"
+    },
+    {
+      "source": "day-19/internal/agent/types.go",
+      "title": "types.go",
+      "type": "go",
+      "character_count": 2333,
+      "word_count": 188,
+      "line_count": 80,
+      "sha256": "17d5d4427c38dc84f70e0ea237590e54952d8043201ffebd4fe2a52cf43b7d7d"
+    },
+    {
+      "source": "day-19/internal/mcpclient/client.go",
+      "title": "client.go",
+      "type": "go",
+      "character_count": 3570,
+      "word_count": 399,
+      "line_count": 115,
+      "sha256": "aa77b07f06e71a901688d6ead43fbeddaf679d8c362d33586c8b6dc3b878009d"
+    },
+    {
+      "source": "day-19/internal/pipeline/contract_test.go",
+      "title": "contract_test.go",
+      "type": "go",
+      "character_count": 3679,
+      "word_count": 403,
+      "line_count": 108,
+      "sha256": "a1f6438944e2bc4f12db5cadc64d6a2aa086a4e32e175f1175923ddcbe06f310"
+    },
+    {
+      "source": "day-19/internal/pipeline/save.go",
+      "title": "save.go",
+      "type": "go",
+      "character_count": 3942,
+      "word_count": 434,
+      "line_count": 121,
+      "sha256": "4f8dd5f8a0d0b74260a5f49570c894b97ab20873b23de377ab7d9f92f8200060"
+    },
+    {
+      "source": "day-19/internal/pipeline/save_test.go",
+      "title": "save_test.go",
+      "type": "go",
+      "character_count": 1844,
+      "word_count": 217,
+      "line_count": 56,
+      "sha256": "dd53ad04abda16a14c7bd383427d2bdeed585dd7f5bc44fd3e0b6795c5d6c561"
+    },
+    {
+      "source": "day-19/internal/pipeline/server.go",
+      "title": "server.go",
+      "type": "go",
+      "character_count": 7573,
+      "word_count": 724,
+      "line_count": 166,
+      "sha256": "d893dd3da761b832e6cb3650fc47704be5e926c1085db36e0402c59d07b013ba"
+    },
+    {
+      "source": "day-19/internal/pipeline/summarize.go",
+      "title": "summarize.go",
+      "type": "go",
+      "character_count": 3274,
+      "word_count": 388,
+      "line_count": 107,
+      "sha256": "4f261a4b93f7ff8a470e41cba3766e77469b47978421fc8aec59a3edb12e6f18"
+    },
+    {
+      "source": "day-19/internal/pipeline/summarize_test.go",
+      "title": "summarize_test.go",
+      "type": "go",
+      "character_count": 2334,
+      "word_count": 278,
+      "line_count": 61,
+      "sha256": "319ece74498ec265a10da345a8d7550df7b6166149df2e3ce8f23ee25e9fe92b"
+    },
+    {
+      "source": "day-19/internal/pipeline/types.go",
+      "title": "types.go",
+      "type": "go",
+      "character_count": 2202,
+      "word_count": 202,
+      "line_count": 82,
+      "sha256": "52c68ae9a93c45ee3733285cb46cfada7ebd9d686b5b538789dbf766a5df3545"
+    },
+    {
+      "source": "day-19/internal/pipeline/wikipedia.go",
+      "title": "wikipedia.go",
+      "type": "go",
+      "character_count": 4977,
+      "word_count": 566,
+      "line_count": 163,
+      "sha256": "c0cb9f8041440cff16071a593426ff8690d86e004575b7b192178c221e83e0a6"
+    },
+    {
+      "source": "day-19/internal/pipeline/wikipedia_test.go",
+      "title": "wikipedia_test.go",
+      "type": "go",
+      "character_count": 4418,
+      "word_count": 473,
+      "line_count": 106,
+      "sha256": "6fc96683252e0d0288020afc672258275a5a6c62d736d8fa508373b8ce0d786b"
+    },
+    {
+      "source": "day-19/internal/web/page.go",
+      "title": "page.go",
+      "type": "go",
+      "character_count": 9856,
+      "word_count": 375,
+      "line_count": 23,
+      "sha256": "fb01dd2589ec04a7448607e3de8de57154a300d9c0b838bab884e34d50cfb323"
+    },
+    {
+      "source": "day-19/internal/web/server.go",
+      "title": "server.go",
+      "type": "go",
+      "character_count": 6002,
+      "word_count": 550,
+      "line_count": 175,
+      "sha256": "4edd5d1fc60cdf72e1c17222d975f2459d17ee115b2439a6be671ca5bd9b74ad"
+    },
+    {
+      "source": "day-19/internal/web/server_test.go",
+      "title": "server_test.go",
+      "type": "go",
+      "character_count": 1357,
+      "word_count": 132,
+      "line_count": 42,
+      "sha256": "599559284f8cb0feab90162f739cc3a93ac32c525c3a5d0abe6f2d35c9e5528c"
+    },
+    {
+      "source": "day-19/internal/web/sessions.go",
+      "title": "sessions.go",
+      "type": "go",
+      "character_count": 1586,
+      "word_count": 172,
+      "line_count": 58,
+      "sha256": "689c1feb1a087eadbbeccda23d93c717a6eab9792376ad10844e3ab619b33fb6"
+    },
+    {
+      "source": "day-20/README.md",
+      "title": "README.md",
+      "type": "markdown",
+      "character_count": 1662,
+      "word_count": 195,
+      "line_count": 25,
+      "sha256": "e75a50415548f6188f753258bd92a6eb7cdebd68052d016d995c95e921debdd6"
+    },
+    {
+      "source": "day-20/cmd/agent-app/main.go",
+      "title": "main.go",
+      "type": "go",
+      "character_count": 1977,
+      "word_count": 183,
+      "line_count": 47,
+      "sha256": "3f877ead25b05bd6f974a11c57c0ac69a83ef987ee98ca12d1f3403e03243181"
+    },
+    {
+      "source": "day-20/cmd/artifact-mcp/main.go",
+      "title": "main.go",
+      "type": "go",
+      "character_count": 864,
+      "word_count": 100,
+      "line_count": 37,
+      "sha256": "8af168243d69c65750f6ad4300ff9976a2d49e74a24aadcbc1bec6f031586e74"
+    },
+    {
+      "source": "day-20/cmd/github-mcp/main.go",
+      "title": "main.go",
+      "type": "go",
+      "character_count": 977,
+      "word_count": 105,
+      "line_count": 36,
+      "sha256": "b86967780efe94daff1538b72beaf5026da34f59a7b50be4e2e5da748d3bc77d"
+    },
+    {
+      "source": "day-20/cmd/knowledge-mcp/main.go",
+      "title": "main.go",
+      "type": "go",
+      "character_count": 984,
+      "word_count": 107,
+      "line_count": 37,
+      "sha256": "62890e712c69ed420bcc432fc5bc58d1d63d9424902d0b1bd23c6d01653603e7"
+    },
+    {
+      "source": "day-20/internal/agent/agent.go",
+      "title": "agent.go",
+      "type": "go",
+      "character_count": 15148,
+      "word_count": 1734,
+      "line_count": 400,
+      "sha256": "5c82c8f7f739f2cc080c1a02252eefcf16007c86e3964c02d789b24c7e51c109"
+    },
+    {
+      "source": "day-20/internal/agent/agent_test.go",
+      "title": "agent_test.go",
+      "type": "go",
+      "character_count": 12348,
+      "word_count": 1211,
+      "line_count": 246,
+      "sha256": "3285a619ed90cfb867f69f3234812e1e3dc9cf04b59b75e27ec91cd184b24fb9"
+    },
+    {
+      "source": "day-20/internal/agent/deepseek.go",
+      "title": "deepseek.go",
+      "type": "go",
+      "character_count": 2603,
+      "word_count": 301,
+      "line_count": 88,
+      "sha256": "9af4528b5ec39ac8a16b4acd30928a5c1b0f81a2ebcac63083a56a505c32caef"
+    },
+    {
+      "source": "day-20/internal/agent/types.go",
+      "title": "types.go",
+      "type": "go",
+      "character_count": 2502,
+      "word_count": 197,
+      "line_count": 83,
+      "sha256": "209d267f2bbdf242e5cd0b7c75dd7358e384995bbe135dd2d1b19c12676f9cb1"
+    },
+    {
+      "source": "day-20/internal/artifact/server.go",
+      "title": "server.go",
+      "type": "go",
+      "character_count": 7913,
+      "word_count": 712,
+      "line_count": 90,
+      "sha256": "d29a7e72ecfda1e7e4873c79d2ffb81ea11c95207a64c95a2de926f1694db055"
+    },
+    {
+      "source": "day-20/internal/artifact/store.go",
+      "title": "store.go",
+      "type": "go",
+      "character_count": 5951,
+      "word_count": 659,
+      "line_count": 166,
+      "sha256": "4877ba3a512fabdabe75563d8dbc4e8da67c6037443ba38193ebaf2539d0f330"
+    },
+    {
+      "source": "day-20/internal/artifact/store_test.go",
+      "title": "store_test.go",
+      "type": "go",
+      "character_count": 1455,
+      "word_count": 159,
+      "line_count": 37,
+      "sha256": "a36c6aa9c8f72558a9fc2c416dd137d339c2eb573f29a87d433c5905608b8510"
+    },
+    {
+      "source": "day-20/internal/domain/types.go",
+      "title": "types.go",
+      "type": "go",
+      "character_count": 4897,
+      "word_count": 404,
+      "line_count": 141,
+      "sha256": "4fe9cf577046f7220431a48616193e055ce55546f783082d26ad91f779473698"
+    },
+    {
+      "source": "day-20/internal/githubapi/client.go",
+      "title": "client.go",
+      "type": "go",
+      "character_count": 4402,
+      "word_count": 472,
+      "line_count": 118,
+      "sha256": "b3dd940c0bfb45d720f608b495cfa2e0dd312d9ea89102a686efa2bb02db1811"
+    },
+    {
+      "source": "day-20/internal/githubapi/client_test.go",
+      "title": "client_test.go",
+      "type": "go",
+      "character_count": 1379,
+      "word_count": 132,
+      "line_count": 46,
+      "sha256": "ca7f13920e49afb78b8399a3073a66b52ac6cc78b2ca5d1a95c9a0e079986384"
+    },
+    {
+      "source": "day-20/internal/githubapi/server.go",
+      "title": "server.go",
+      "type": "go",
+      "character_count": 3716,
+      "word_count": 336,
+      "line_count": 49,
+      "sha256": "d727e11b15752ac1237b932c12f64dc7c07dbaec4901ba1993ff548bfcf4b0d0"
+    },
+    {
+      "source": "day-20/internal/knowledge/client.go",
+      "title": "client.go",
+      "type": "go",
+      "character_count": 5104,
+      "word_count": 569,
+      "line_count": 165,
+      "sha256": "c5d696c8342a3d0097975bd9baf324c142d4564bc8daaa00ddae6e0071775541"
+    },
+    {
+      "source": "day-20/internal/knowledge/knowledge_test.go",
+      "title": "knowledge_test.go",
+      "type": "go",
+      "character_count": 2278,
+      "word_count": 252,
+      "line_count": 62,
+      "sha256": "72eb8bb7f99633ab872b35ee37270264aea5b2a0e3ec7c08bd7391b3f9256889"
+    },
+    {
+      "source": "day-20/internal/knowledge/server.go",
+      "title": "server.go",
+      "type": "go",
+      "character_count": 3931,
+      "word_count": 352,
+      "line_count": 54,
+      "sha256": "d2bd27e91cf62268071b65fa83fa342ad589d0ee6a94b32b9ef51478a3c899d9"
+    },
+    {
+      "source": "day-20/internal/knowledge/summarize.go",
+      "title": "summarize.go",
+      "type": "go",
+      "character_count": 3808,
+      "word_count": 429,
+      "line_count": 121,
+      "sha256": "63fc4712d1cd874a142e44d2f71c990df4495900def5cc1bf47c3da7f3601c42"
+    },
+    {
+      "source": "day-20/internal/mcpclient/client.go",
+      "title": "client.go",
+      "type": "go",
+      "character_count": 6140,
+      "word_count": 738,
+      "line_count": 208,
+      "sha256": "1f55cd97f390e594f6fa427799aff5a9a3353d16465701006cbcf324e6e129c4"
+    },
+    {
+      "source": "day-20/internal/mcpclient/client_test.go",
+      "title": "client_test.go",
+      "type": "go",
+      "character_count": 2281,
+      "word_count": 261,
+      "line_count": 70,
+      "sha256": "dfd3707e005c2e7eccb630ca0612dabc3fe68881d0c7956505145bca8545e4fb"
+    },
+    {
+      "source": "day-20/internal/mcpcontract/schema.go",
+      "title": "schema.go",
+      "type": "go",
+      "character_count": 963,
+      "word_count": 101,
+      "line_count": 21,
+      "sha256": "2a53f759f5ac337675baf0eff713316679db69eb86e0ec44b79a4027abbfa91c"
+    },
+    {
+      "source": "day-20/internal/web/page.go",
+      "title": "page.go",
+      "type": "go",
+      "character_count": 10188,
+      "word_count": 391,
+      "line_count": 23,
+      "sha256": "d01659f0139746cf4970fd5525be6c4d5466ce3400ec8721f654f137a1dc674f"
+    },
+    {
+      "source": "day-20/internal/web/server.go",
+      "title": "server.go",
+      "type": "go",
+      "character_count": 6002,
+      "word_count": 550,
+      "line_count": 175,
+      "sha256": "dd2b73b88a6ac110056f1696ca0f590336a5256e29e48bbd921b8715a58112b6"
+    },
+    {
+      "source": "day-20/internal/web/sessions.go",
+      "title": "sessions.go",
+      "type": "go",
+      "character_count": 1586,
+      "word_count": 172,
+      "line_count": 58,
+      "sha256": "b87877cb1dd604065b28b4b1b970a57d2b9d2df67935cdc8a370e73fa83f732d"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "n01-pediatric-medicine",
+    "question": "Какая дозировка амоксициллина назначается ребёнку семи лет при остром отите?",
+    "expected_status": "insufficient_context"
+  },
+  {
+    "id": "n02-neapolitan-pizza",
+    "question": "Как приготовить тесто для неаполитанской пиццы с холодной ферментацией 72 часа?",
+    "expected_status": "insufficient_context"
+  },
+  {
+    "id": "n03-future-weather",
+    "question": "Какая погода будет в Казани 12 января 2032 года?",
+    "expected_status": "insufficient_context"
+  },
+  {
+    "id": "n04-fictional-revenue",
+    "question": "Какова выручка компании Северный Маяк за третий квартал 2026 года?",
+    "expected_status": "insufficient_context"
+  },
+  {
+    "id": "n05-personal-insurance",
+    "question": "Какой номер моего страхового полиса и когда заканчивается его срок действия?",
+    "expected_status": "insufficient_context"
+  },
+  {
+    "id": "n06-novel-plot",
+    "question": "Перескажи сюжет романа Мастер и Маргарита и объясни финал Воланда.",
+    "expected_status": "insufficient_context"
+  }
+]

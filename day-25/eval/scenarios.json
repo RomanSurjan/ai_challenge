@@ -1,0 +1,190 @@
+[
+  {
+    "id": "artifact-security-audit",
+    "title": "Artifact security audit",
+    "turns": [
+      {
+        "message": "Наша цель — проверить безопасность Artifact MCP.",
+        "expected_active_goal": "проверить безопасность Artifact MCP",
+        "required_memory": ["goal:проверить безопасность Artifact MCP"],
+        "expected_status": "memory_only",
+        "requires_user_memory_source": true
+      },
+      {
+        "message": "Ограничение: учитывай только Go-реализацию.",
+        "expected_active_goal": "проверить безопасность Artifact MCP",
+        "required_memory": ["constraint:учитывать только Go-реализацию"],
+        "expected_status": "memory_only",
+        "requires_user_memory_source": true
+      },
+      {
+        "message": "Уточнение: особенно важны path traversal и atomic write.",
+        "expected_active_goal": "проверить безопасность Artifact MCP",
+        "required_memory": ["clarification:path traversal и atomic write особенно важны"],
+        "expected_status": "memory_only",
+        "requires_user_memory_source": true
+      },
+      {
+        "message": "Как он защищается от первого?",
+        "expected_active_goal": "проверить безопасность Artifact MCP",
+        "expected_query_entities": ["Artifact MCP", "path traversal"],
+        "required_concepts": ["absolute path", "..", "разделители"],
+        "expected_sources": ["day-20/internal/artifact/store.go"],
+        "expected_status": "answered",
+        "requires_corpus_source": true
+      },
+      {
+        "message": "А как реализовано второе?",
+        "expected_active_goal": "проверить безопасность Artifact MCP",
+        "expected_query_entities": ["Artifact MCP", "atomic write"],
+        "required_concepts": ["временный файл", "fsync", "rename"],
+        "expected_sources": ["day-20/internal/artifact/store.go"],
+        "expected_status": "answered",
+        "requires_corpus_source": true
+      },
+      {
+        "message": "Решение: теперь приоритет — лимит размера Markdown.",
+        "expected_active_goal": "проверить безопасность Artifact MCP",
+        "required_memory": ["decision:приоритет — лимит размера Markdown"],
+        "expected_query_entities": ["Artifact MCP", "лимит размера Markdown"],
+        "expected_status": "answered",
+        "requires_corpus_source": true
+      },
+      {
+        "message": "Какой именно лимит?",
+        "expected_active_goal": "проверить безопасность Artifact MCP",
+        "expected_query_entities": ["Artifact MCP", "лимит размера Markdown"],
+        "required_concepts": ["512"],
+        "expected_sources": ["day-20/internal/artifact/store.go"],
+        "expected_status": "answered",
+        "requires_corpus_source": true
+      },
+      {
+        "message": "Сравни его с ранее обсуждённой атомарной записью.",
+        "expected_active_goal": "проверить безопасность Artifact MCP",
+        "expected_query_entities": ["лимит размера", "атомарная запись"],
+        "required_concepts": ["лимит", "fsync", "rename"],
+        "expected_sources": ["day-20/internal/artifact/store.go"],
+        "expected_status": "answered",
+        "requires_corpus_source": true
+      },
+      {
+        "message": "Больше не учитывай ограничение «только Go-реализацию».",
+        "expected_active_goal": "проверить безопасность Artifact MCP",
+        "forbidden_memory": ["constraint:учитывать только Go-реализацию"],
+        "expected_status": "memory_only",
+        "requires_user_memory_source": true
+      },
+      {
+        "message": "Вернись к исходной цели: какие риски мы проверяем?",
+        "expected_active_goal": "проверить безопасность Artifact MCP",
+        "expected_query_entities": ["Artifact MCP", "безопасность"],
+        "expected_status": "answered",
+        "requires_corpus_source": true
+      },
+      {
+        "message": "Дай финальную сводку с текущими ограничениями и проверяемыми источниками.",
+        "expected_active_goal": "проверить безопасность Artifact MCP",
+        "forbidden_memory": ["constraint:учитывать только Go-реализацию"],
+        "expected_query_entities": ["Artifact MCP", "path traversal", "atomic write", "лимит размера"],
+        "expected_status": "answered",
+        "requires_corpus_source": true,
+        "requires_user_memory_source": true
+      }
+    ]
+  },
+  {
+    "id": "mcp-agent-reliability",
+    "title": "MCP agent reliability",
+    "turns": [
+      {
+        "message": "Наша цель — понять полный tool-call и scheduler flow MCP-агента.",
+        "expected_active_goal": "понять полный tool-call и scheduler flow MCP-агента",
+        "required_memory": ["goal:понять полный tool-call и scheduler flow MCP-агента"],
+        "expected_status": "memory_only",
+        "requires_user_memory_source": true
+      },
+      {
+        "message": "Термин: tool_call_id — идентификатор вызова, который надо сохранить.",
+        "expected_active_goal": "понять полный tool-call и scheduler flow MCP-агента",
+        "required_memory": ["term:tool_call_id — идентификатор вызова, который надо сохранить"],
+        "expected_status": "memory_only",
+        "requires_user_memory_source": true
+      },
+      {
+        "message": "Термин: role=tool — сообщение с результатом MCP-инструмента.",
+        "required_memory": ["term:role=tool — сообщение с результатом MCP-инструмента"],
+        "expected_status": "memory_only",
+        "requires_user_memory_source": true
+      },
+      {
+        "message": "Ограничение: обязательно учитывай restart persistence scheduler-а.",
+        "required_memory": ["constraint:учитывать restart persistence scheduler-а"],
+        "expected_status": "memory_only",
+        "requires_user_memory_source": true
+      },
+      {
+        "message": "А что происходит после перезапуска?",
+        "expected_query_entities": ["scheduler", "после перезапуска"],
+        "required_concepts": ["SQLite", "running", "восстанавливаются"],
+        "expected_sources": ["day-18/README.md"],
+        "expected_status": "answered",
+        "requires_corpus_source": true
+      },
+      {
+        "message": "Термин: pagination означает повторять ListTools с NextCursor до пустого cursor.",
+        "required_memory": ["term:pagination означает повторять ListTools с NextCursor до пустого cursor"],
+        "expected_query_entities": ["ListTools", "NextCursor"],
+        "expected_status": "answered",
+        "requires_corpus_source": true
+      },
+      {
+        "message": "А где она используется?",
+        "expected_query_entities": ["pagination", "ListTools", "NextCursor"],
+        "expected_sources": ["day-16/internal/mcpdemo/client.go"],
+        "expected_status": "answered",
+        "requires_corpus_source": true
+      },
+      {
+        "message": "Ограничение: не обсуждай UI.",
+        "required_memory": ["constraint:не обсуждать UI"],
+        "expected_status": "memory_only",
+        "requires_user_memory_source": true
+      },
+      {
+        "message": "Как модель получает результат инструмента в следующем раунде?",
+        "expected_query_entities": ["tool_call_id", "role=tool", "следующий раунд"],
+        "required_concepts": ["tool_call_id", "role=tool", "история"],
+        "expected_sources": ["day-17/internal/agent/agent.go"],
+        "expected_status": "answered",
+        "requires_corpus_source": true,
+        "forbidden_answer_terms": ["кнопка", "web-интерфейс"]
+      },
+      {
+        "message": "А что было нашей целью?",
+        "expected_active_goal": "понять полный tool-call и scheduler flow MCP-агента",
+        "expected_status": "memory_only",
+        "requires_user_memory_source": true,
+        "forbidden_answer_terms": ["кнопка", "web-интерфейс"]
+      },
+      {
+        "message": "Когда заканчивается эта пагинация?",
+        "expected_query_entities": ["ListTools", "NextCursor", "пустой cursor"],
+        "required_concepts": ["NextCursor", "пуст"],
+        "expected_sources": ["day-16/internal/mcpdemo/client.go"],
+        "expected_status": "answered",
+        "requires_corpus_source": true,
+        "forbidden_answer_terms": ["кнопка", "web-интерфейс"]
+      },
+      {
+        "message": "Дай итог по tool-call и scheduler flow с учётом всех активных ограничений.",
+        "expected_active_goal": "понять полный tool-call и scheduler flow MCP-агента",
+        "expected_query_entities": ["tool-call", "scheduler", "restart persistence"],
+        "expected_status": "answered",
+        "requires_corpus_source": true,
+        "requires_user_memory_source": true,
+        "forbidden_answer_terms": ["кнопка", "web-интерфейс"]
+      }
+    ]
+  }
+]

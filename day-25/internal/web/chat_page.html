@@ -1,0 +1,1517 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Day 25 · Local RAG Chat</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0d12;
+      --panel: #151922;
+      --panel-subtle: #0f131b;
+      --panel-hover: #1c222d;
+      --line: #2c3442;
+      --line-strong: #3c4758;
+      --text: #f6f2e8;
+      --muted: #929cad;
+      --accent: #5ce1e6;
+      --warning: #ffca62;
+      --success: #9dec83;
+      --danger: #ff7b82;
+      --user-bubble: #243543;
+      --assistant-bubble: #28271f;
+      --radius-sm: 8px;
+      --radius-md: 13px;
+      --radius-lg: 18px;
+      --shadow: 0 24px 70px #0005;
+    }
+
+    * { box-sizing: border-box; }
+    html { min-width: 320px; scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 9% 0, #172535 0, transparent 32%),
+        radial-gradient(circle at 92% 9%, #282014 0, transparent 27%),
+        var(--bg);
+      color: var(--text);
+      font: 15px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    button, input, select, textarea { font: inherit; }
+    button, select { min-height: 42px; }
+    button { cursor: pointer; }
+    button:disabled, input:disabled, select:disabled, textarea:disabled { cursor: wait; opacity: .5; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [role="tab"]:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .skip-link {
+      position: fixed;
+      z-index: 100;
+      top: 8px;
+      left: 8px;
+      transform: translateY(-160%);
+      border-radius: var(--radius-sm);
+      background: var(--accent);
+      color: #071013;
+      padding: 9px 12px;
+      font-weight: 800;
+    }
+    .skip-link:focus { transform: translateY(0); }
+    .visually-hidden {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+    .app-shell {
+      width: min(1760px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 26px 0 36px;
+    }
+    .hero {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 18px;
+    }
+    .kicker {
+      color: var(--accent);
+      font: 800 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+    .hero h1 {
+      margin: 7px 0 8px;
+      font: 700 clamp(32px, 4.6vw, 62px)/.95 Georgia, serif;
+      letter-spacing: -.045em;
+    }
+    .hero p { max-width: 850px; margin: 0; color: var(--muted); }
+    .health-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      flex: 0 0 auto;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #111620;
+      padding: 9px 14px;
+      white-space: nowrap;
+    }
+    .health-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warning); box-shadow: 0 0 11px currentColor; }
+    .health-badge.ready .health-dot { background: var(--success); }
+    .health-badge.error .health-dot { background: var(--danger); }
+    .pipeline-wrap { position: relative; margin-bottom: 16px; }
+    .pipeline {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 1px 1px 7px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--line-strong) transparent;
+    }
+    .pipeline-step {
+      position: relative;
+      flex: 1 0 148px;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: rgba(21, 25, 34, .94);
+      padding: 11px 13px;
+      transition: border-color 160ms ease, background 160ms ease;
+    }
+    .pipeline-step:not(:last-child)::after {
+      content: "\2192";
+      position: absolute;
+      z-index: 2;
+      top: 11px;
+      right: -14px;
+      color: var(--warning);
+      font-weight: 900;
+    }
+    .pipeline-step strong { display: block; color: var(--accent); font: 750 12px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .pipeline-step span { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+    .pipeline-step.done { border-color: color-mix(in srgb, var(--success) 55%, var(--line)); background: #172019; }
+    .pipeline-step.done strong { color: var(--success); }
+    .pipeline-step.skipped { opacity: .58; }
+    .pipeline-step.warn { border-color: color-mix(in srgb, var(--warning) 65%, var(--line)); background: #211d14; }
+    .pipeline-step.warn strong { color: var(--warning); }
+    .pipeline-step.fail { border-color: color-mix(in srgb, var(--danger) 70%, var(--line)); background: #24171a; }
+    .pipeline-step.fail strong { color: var(--danger); }
+    .pipeline.busy .pipeline-step { animation: pulse-border 1.8s ease-in-out infinite; }
+    @keyframes pulse-border { 50% { border-color: var(--accent); } }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(235px, 280px) minmax(420px, 1fr) minmax(340px, 400px);
+      gap: 14px;
+      min-height: 590px;
+      height: calc(100dvh - 250px);
+      max-height: 900px;
+    }
+    .panel {
+      min-width: 0;
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: rgba(21, 25, 34, .95);
+      box-shadow: var(--shadow);
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 16px 16px 12px;
+    }
+    .panel-header h2 { margin: 0; font-size: 12px; letter-spacing: .13em; text-transform: uppercase; }
+    .panel-header small { color: var(--muted); }
+    .secondary-button, .danger-button, .icon-button {
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      background: #242b37;
+      color: var(--text);
+      padding: 8px 11px;
+      font-weight: 750;
+    }
+    .secondary-button:hover, .icon-button:hover { background: #303948; }
+    .danger-button { border-color: #6d343a; background: #351d22; color: #ffd9dc; }
+    .danger-button:hover { background: #4a242a; }
+    .icon-button { min-width: 42px; padding: 8px; }
+    .primary-button {
+      border: 0;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #071013;
+      padding: 10px 14px;
+      font-weight: 850;
+    }
+    .primary-button:hover { background: #81f0f3; }
+
+    .session-panel { display: flex; flex-direction: column; overflow: hidden; }
+    .session-create { display: grid; gap: 8px; padding: 0 14px 14px; border-bottom: 1px solid var(--line); }
+    .session-create label { color: var(--muted); font-size: 12px; }
+    .session-create-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px; }
+    input, select, textarea {
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      background: var(--panel-subtle);
+      color: var(--text);
+    }
+    input { min-width: 0; padding: 10px 11px; }
+    select { padding: 8px 34px 8px 11px; }
+    textarea { width: 100%; resize: vertical; padding: 12px 13px; line-height: 1.5; }
+    input::placeholder, textarea::placeholder { color: #748093; }
+    .session-list {
+      display: grid;
+      gap: 8px;
+      align-content: start;
+      overflow: auto;
+      padding: 12px;
+    }
+    .session-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel-subtle);
+      padding: 5px;
+    }
+    .session-item.active { border-color: var(--accent); background: #16252d; }
+    .session-select {
+      min-width: 0;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text);
+      padding: 7px;
+      text-align: left;
+    }
+    .session-id { display: block; overflow: hidden; text-overflow: ellipsis; font-weight: 800; white-space: nowrap; }
+    .session-meta { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; font-weight: 450; }
+    .session-delete { align-self: center; border: 0; border-radius: 8px; background: transparent; color: var(--muted); min-height: 38px; min-width: 38px; }
+    .session-delete:hover { background: #3a2226; color: var(--danger); }
+
+    .chat-panel { display: flex; flex-direction: column; overflow: hidden; }
+    .chat-toolbar { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+    .chat-toolbar .session-title { min-width: 0; margin-right: auto; }
+    .chat-toolbar .session-title strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chat-toolbar .session-title small { display: block; color: var(--muted); }
+    .mode-control { display: flex; align-items: center; gap: 7px; }
+    .mode-control label { color: var(--muted); font-size: 12px; }
+    .mode-note { margin: -4px 16px 10px; color: var(--muted); font-size: 12px; }
+    .turn-notice { display: grid; gap: 5px; margin: 0 14px 10px; }
+    .notice {
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--accent);
+      border-radius: 10px;
+      background: var(--panel-subtle);
+      padding: 9px 11px;
+      font-size: 13px;
+    }
+    .notice.success { border-left-color: var(--success); }
+    .notice.warning { border-left-color: var(--warning); }
+    .notice.error { border-left-color: var(--danger); }
+    .notice strong { display: block; margin-bottom: 2px; font-size: 12px; }
+    .message-log {
+      flex: 1 1 auto;
+      min-height: 180px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      margin: 0 12px;
+      border: 1px solid #202836;
+      border-radius: 13px;
+      background: var(--panel-subtle);
+      padding: 14px;
+      scroll-padding-bottom: 18px;
+    }
+    .message-stack { display: grid; gap: 11px; align-content: start; }
+    .message {
+      display: grid;
+      gap: 5px;
+      width: min(90%, 760px);
+    }
+    .message.user { justify-self: end; }
+    .message.assistant { justify-self: start; }
+    .message-meta { display: flex; gap: 8px; color: var(--muted); font: 10px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .message.user .message-meta { justify-content: flex-end; }
+    .bubble { border-radius: 12px; padding: 11px 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .message.user .bubble { background: var(--user-bubble); }
+    .message.assistant .bubble { background: var(--assistant-bubble); }
+    .message.pending .bubble { border: 1px solid var(--line); color: var(--muted); }
+    .pending-dots { display: inline-flex; width: 30px; justify-content: space-between; margin-right: 8px; vertical-align: middle; }
+    .pending-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: dot 1.2s ease-in-out infinite; }
+    .pending-dots i:nth-child(2) { animation-delay: 120ms; }
+    .pending-dots i:nth-child(3) { animation-delay: 240ms; }
+    @keyframes dot { 50% { transform: translateY(-4px); opacity: .45; } }
+    .empty-state { margin: auto; max-width: 390px; padding: 34px 20px; color: var(--muted); text-align: center; }
+    .empty-state strong { display: block; margin-bottom: 7px; color: var(--text); font: 700 23px/1.1 Georgia, serif; }
+    .composer { flex: 0 0 auto; padding: 12px; }
+    .composer textarea { min-height: 82px; max-height: 220px; }
+    .composer-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; }
+    .composer-hint { color: var(--muted); font-size: 11px; }
+    .send-button { min-width: 150px; }
+
+    .diagnostic-panel { display: flex; flex-direction: column; overflow: hidden; }
+    .tabs { display: flex; gap: 3px; overflow-x: auto; padding: 0 12px 11px; border-bottom: 1px solid var(--line); scrollbar-width: thin; }
+    .tab {
+      position: relative;
+      flex: 0 0 auto;
+      border: 1px solid transparent;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--muted);
+      padding: 7px 9px;
+      font-size: 12px;
+      font-weight: 750;
+    }
+    .tab[aria-selected="true"] { border-color: var(--line-strong); background: #222a36; color: var(--text); }
+    .tab-count { display: inline-block; min-width: 19px; margin-left: 4px; border-radius: 999px; background: #303948; padding: 1px 5px; color: var(--text); font-size: 10px; text-align: center; }
+    .tab-panel { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 12px; }
+    .tab-panel[hidden] { display: none; }
+    .diag-stack { display: grid; gap: 9px; }
+    .section-title { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin: 8px 1px 2px; }
+    .section-title h3 { margin: 0; color: var(--text); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+    .section-title span { color: var(--muted); font-size: 11px; }
+    .diag-card {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--panel-subtle);
+      padding: 10px;
+      overflow-wrap: anywhere;
+    }
+    .diag-card header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
+    .diag-card h4 { margin: 0; font-size: 13px; }
+    .badge { display: inline-flex; align-items: center; min-height: 23px; border: 1px solid var(--line-strong); border-radius: 999px; padding: 2px 7px; color: var(--muted); font: 750 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .badge.corpus { border-color: #2f6873; color: var(--accent); }
+    .badge.memory { border-color: #5c6537; color: var(--success); }
+    .badge.warning { border-color: #745e2f; color: var(--warning); }
+    .badge.error { border-color: #74363c; color: var(--danger); }
+    .diag-meta { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 8px; margin: 0; font-size: 11px; }
+    .diag-meta dt { color: var(--muted); }
+    .diag-meta dd { min-width: 0; margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+    .quote { margin: 8px 0 0; border-left: 2px solid var(--warning); padding-left: 9px; color: #d7d5cf; font-size: 12px; white-space: pre-wrap; }
+    .chip-row { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 7px; }
+    .chip { border-radius: 999px; background: #242d39; padding: 3px 7px; color: #c8d2df; font: 10px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .memory-value { margin: 0; font-size: 13px; white-space: pre-wrap; }
+    .memory-quote { margin: 7px 0 0; color: var(--muted); font-size: 11px; white-space: pre-wrap; }
+    .trace-flow { display: grid; gap: 7px; }
+    .trace-step { border-left: 3px solid var(--accent); }
+    .trace-step.success { border-left-color: var(--success); }
+    .trace-step.warning { border-left-color: var(--warning); }
+    .trace-step.error { border-left-color: var(--danger); }
+    .trace-step.skipped { border-left-color: var(--muted); opacity: .7; }
+    details { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 7px; }
+    summary { color: var(--muted); cursor: pointer; font-size: 11px; }
+    pre { margin: 7px 0 0; color: #bdc6d3; font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+    .metric { border: 1px solid var(--line); border-radius: 10px; background: var(--panel-subtle); padding: 9px; }
+    .metric strong { display: block; color: var(--accent); font: 750 17px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .metric span { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
+    .metric.total { grid-column: 1 / -1; border-color: #355b64; }
+
+    .toast-region { position: fixed; z-index: 90; right: 18px; bottom: 18px; display: grid; gap: 8px; width: min(390px, calc(100% - 36px)); }
+    .toast { border: 1px solid var(--line-strong); border-left: 3px solid var(--accent); border-radius: 11px; background: #171c25; box-shadow: var(--shadow); padding: 11px 13px; }
+    .toast.error { border-left-color: var(--danger); }
+    .toast.warning { border-left-color: var(--warning); }
+    dialog { width: min(460px, calc(100% - 28px)); border: 1px solid var(--line-strong); border-radius: 16px; background: var(--panel); color: var(--text); box-shadow: 0 35px 100px #000b; padding: 0; }
+    dialog::backdrop { background: #05070bc4; backdrop-filter: blur(3px); }
+    .dialog-body { padding: 20px; }
+    .dialog-body h2 { margin: 0 0 8px; font: 700 26px/1.1 Georgia, serif; }
+    .dialog-body p { margin: 0; color: var(--muted); }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 0 20px 20px; }
+
+    @media (max-width: 1199px) {
+      .workspace { grid-template-columns: minmax(420px, 1.15fr) minmax(320px, .85fr); height: auto; max-height: none; }
+      .session-panel { grid-column: 1 / -1; max-height: 330px; }
+      .session-list { grid-template-columns: repeat(auto-fill, minmax(225px, 1fr)); }
+      .chat-panel, .diagnostic-panel { min-height: 680px; max-height: 820px; }
+    }
+    @media (max-width: 799px) {
+      .app-shell { width: min(100% - 20px, 760px); padding-top: 18px; }
+      .hero { display: block; }
+      .hero h1 { font-size: clamp(31px, 12vw, 50px); }
+      .health-badge { margin-top: 13px; }
+      .pipeline-step { flex-basis: 136px; }
+      .workspace { display: flex; flex-direction: column; }
+      .session-panel { order: 1; max-height: 390px; }
+      .chat-panel { order: 2; min-height: 670px; max-height: none; }
+      .diagnostic-panel { order: 3; min-height: 560px; max-height: none; }
+      .session-list { grid-template-columns: 1fr; }
+      .panel-header { padding: 14px 13px 11px; }
+      .chat-toolbar { align-items: stretch; }
+      .chat-toolbar .session-title { flex-basis: 100%; }
+      .mode-control { flex: 1 1 auto; }
+      .mode-control select { flex: 1 1 auto; }
+      .message-log { margin: 0 8px; padding: 10px; }
+      .message { width: 96%; }
+      .composer { position: sticky; bottom: 0; z-index: 5; background: linear-gradient(transparent, var(--panel) 12px); padding-top: 20px; }
+      .composer-footer { align-items: stretch; flex-direction: column; }
+      .send-button { width: 100%; }
+      .metric-grid { grid-template-columns: 1fr; }
+      .metric.total { grid-column: auto; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#chat-main">К диалогу</a>
+  <div class="app-shell">
+    <header class="hero">
+      <div>
+        <div class="kicker">Day 25 · persistent local RAG</div>
+        <h1>RAG Conversation Lab</h1>
+        <p>Локальный чат с проверяемой task memory, provenance, query resolution и строгой валидацией цитат. История и память сохраняются на диске.</p>
+      </div>
+      <div id="health-badge" class="health-badge" role="status" aria-live="polite">
+        <span class="health-dot" aria-hidden="true"></span>
+        <span id="health-text">Подключаемся к local RAG…</span>
+      </div>
+    </header>
+
+    <section class="pipeline-wrap" aria-labelledby="pipeline-title">
+      <h2 id="pipeline-title" class="visually-hidden">RAG pipeline</h2>
+      <div id="pipeline" class="pipeline">
+        <div class="pipeline-step" data-stage="memory"><strong>Task memory</strong><span>extract + validate</span></div>
+        <div class="pipeline-step" data-stage="resolver"><strong>Query resolver</strong><span>context → search query</span></div>
+        <div class="pipeline-step" data-stage="retrieval"><strong>Retrieval/Rerank</strong><span>embed → top-k</span></div>
+        <div class="pipeline-step" data-stage="gate"><strong>Gate</strong><span>relevance threshold</span></div>
+        <div class="pipeline-step" data-stage="answer"><strong>Structured answer</strong><span>claims + evidence</span></div>
+        <div class="pipeline-step" data-stage="validation"><strong>Quote validation</strong><span>exact S/U quotes</span></div>
+        <div class="pipeline-step" data-stage="judge"><strong>Judge</strong><span>entailment verdict</span></div>
+      </div>
+    </section>
+
+    <div class="workspace">
+      <nav class="panel session-panel" aria-labelledby="sessions-title">
+        <div class="panel-header">
+          <div><h2 id="sessions-title">Сессии</h2><small id="session-count">0 persistent</small></div>
+        </div>
+        <form id="session-create" class="session-create">
+          <label for="session-id">Новая сессия</label>
+          <div class="session-create-row">
+            <input id="session-id" name="session_id" required maxlength="64" pattern="[A-Za-z0-9][A-Za-z0-9_-]{0,63}" autocomplete="off" placeholder="project-audit" aria-describedby="session-id-hint">
+            <button class="primary-button" type="submit">Создать</button>
+          </div>
+          <small id="session-id-hint">Латиница, цифры, «_» и «-».</small>
+        </form>
+        <div id="session-list" class="session-list" aria-live="polite"></div>
+      </nav>
+
+      <main id="chat-main" class="panel chat-panel" tabindex="-1">
+        <div class="panel-header chat-toolbar">
+          <div class="session-title">
+            <strong id="current-session">Сессия не выбрана</strong>
+            <small id="current-session-meta">Создайте новый чат</small>
+          </div>
+          <div class="mode-control">
+            <label for="mode-select">Режим</label>
+            <select id="mode-select" aria-describedby="mode-note"></select>
+          </div>
+          <button id="new-chat" class="secondary-button" type="button">Новый чат</button>
+        </div>
+        <p id="mode-note" class="mode-note"></p>
+        <div id="turn-notice" class="turn-notice" aria-live="polite"></div>
+        <section id="message-log" class="message-log" aria-label="История сообщений" aria-live="polite">
+          <div id="message-stack" class="message-stack"></div>
+        </section>
+        <form id="composer" class="composer">
+          <label class="visually-hidden" for="message-input">Сообщение</label>
+          <textarea id="message-input" name="message" required placeholder="Задайте вопрос локальному RAG…" aria-describedby="composer-hint"></textarea>
+          <div class="composer-footer">
+            <span id="composer-hint" class="composer-hint">Ctrl/Cmd + Enter — отправить · ответ приходит целиком</span>
+            <button id="send-button" class="primary-button send-button" type="submit">Отправить</button>
+          </div>
+        </form>
+      </main>
+
+      <aside class="panel diagnostic-panel" aria-labelledby="diagnostics-title">
+        <div class="panel-header">
+          <div><h2 id="diagnostics-title">Диагностика</h2><small id="turn-status">Ожидается turn</small></div>
+        </div>
+        <div id="diagnostic-tabs" class="tabs" role="tablist" aria-label="Диагностические данные">
+          <button id="tab-sources" class="tab" type="button" role="tab" aria-selected="true" aria-controls="panel-sources" data-tab="sources">Источники<span id="count-sources" class="tab-count">0</span></button>
+          <button id="tab-memory" class="tab" type="button" role="tab" aria-selected="false" aria-controls="panel-memory" data-tab="memory" tabindex="-1">Память<span id="count-memory" class="tab-count">0</span></button>
+          <button id="tab-trace" class="tab" type="button" role="tab" aria-selected="false" aria-controls="panel-trace" data-tab="trace" tabindex="-1">Trace</button>
+          <button id="tab-metrics" class="tab" type="button" role="tab" aria-selected="false" aria-controls="panel-metrics" data-tab="metrics" tabindex="-1">Метрики</button>
+        </div>
+        <section id="panel-sources" class="tab-panel" role="tabpanel" aria-labelledby="tab-sources"></section>
+        <section id="panel-memory" class="tab-panel" role="tabpanel" aria-labelledby="tab-memory" hidden></section>
+        <section id="panel-trace" class="tab-panel" role="tabpanel" aria-labelledby="tab-trace" hidden></section>
+        <section id="panel-metrics" class="tab-panel" role="tabpanel" aria-labelledby="tab-metrics" hidden></section>
+      </aside>
+    </div>
+  </div>
+
+  <dialog id="delete-dialog" aria-labelledby="delete-title">
+    <div class="dialog-body">
+      <h2 id="delete-title">Удалить сессию?</h2>
+      <p id="delete-copy"></p>
+    </div>
+    <div class="dialog-actions">
+      <button id="delete-cancel" class="secondary-button" type="button">Отмена</button>
+      <button id="delete-confirm" class="danger-button" type="button">Удалить</button>
+    </div>
+  </dialog>
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="false"></div>
+
+  <script>
+    "use strict";
+
+    const byId = (id) => document.getElementById(id);
+    const state = {
+      currentSessionID: "",
+      sessions: [],
+      messages: [],
+      taskState: emptyTaskState(),
+      mode: "task-memory",
+      availableModes: ["stateless", "history", "task-memory"],
+      lastTurn: null,
+      sources: [],
+      citations: [],
+      claims: [],
+      pending: null,
+      pendingTimer: null,
+      deleteSessionID: "",
+      errorNotice: null
+    };
+
+    const modeCopy = {
+      "stateless": "История сохраняется для аудита, но retrieval и generator её не используют.",
+      "history": "Resolver и generator получают ограниченное окно недавней истории.",
+      "task-memory": "История дополняется persistent task memory с проверяемым provenance."
+    };
+    const modeLabels = {
+      "stateless": "Stateless",
+      "history": "History",
+      "task-memory": "Task memory"
+    };
+    const latencyLabels = {
+      session_load_ms: "Загрузка сессии",
+      session_save_ms: "Сохранение сессии",
+      memory_extraction_ms: "Task memory",
+      memory_validation_ms: "Валидация памяти",
+      query_resolution_ms: "Query resolver",
+      embedding_retrieval_ms: "Embedding + retrieval",
+      retrieval_ms: "Retrieval",
+      filter_rerank_ms: "Filter + rerank",
+      rerank_ms: "Rerank",
+      generation_ms: "Structured answer",
+      answer_validation_ms: "Quote validation",
+      validation_ms: "Quote validation",
+      judge_ms: "Judge",
+      total_turn_ms: "Весь turn",
+      total_ms: "Весь turn"
+    };
+    const tokenLabels = {
+      memory_prompt: "Memory · prompt",
+      memory_completion: "Memory · completion",
+      resolver_prompt: "Resolver · prompt",
+      resolver_completion: "Resolver · completion",
+      answer_prompt: "Answer · prompt",
+      answer_completion: "Answer · completion",
+      judge_prompt: "Judge · prompt",
+      judge_completion: "Judge · completion"
+    };
+
+    class APIError extends Error {
+      constructor(status, message, data) {
+        super(message);
+        this.name = "APIError";
+        this.status = status;
+        this.data = data;
+      }
+    }
+
+    function emptyTaskState() {
+      return { goal: null, constraints: [], terms: [], decisions: [], clarifications: [], open_questions: [], superseded_history: [] };
+    }
+
+    function node(tag, className, text) {
+      const element = document.createElement(tag);
+      if (className) element.className = className;
+      if (text !== undefined && text !== null) element.textContent = String(text);
+      return element;
+    }
+
+    function asArray(value) {
+      return Array.isArray(value) ? value : [];
+    }
+
+    function asObject(value) {
+      return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    }
+
+    function firstDefined(...values) {
+      for (const value of values) {
+        if (value !== undefined && value !== null) return value;
+      }
+      return undefined;
+    }
+
+    function safeText(value, fallback = "—") {
+      if (value === undefined || value === null || String(value).trim() === "") return fallback;
+      return String(value);
+    }
+
+    function safeSource(value) {
+      const text = safeText(value);
+      if (/^(\/|[A-Za-z]:[\\/])/.test(text)) return "локальный источник";
+      return text;
+    }
+
+    function formatDate(value) {
+      if (!value) return "—";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "—";
+      return date.toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" });
+    }
+
+    function formatDuration(milliseconds) {
+      const number = Number(milliseconds);
+      if (!Number.isFinite(number)) return "—";
+      if (number < 1000) return `${number} мс`;
+      return `${(number / 1000).toFixed(number < 10000 ? 2 : 1)} с`;
+    }
+
+    function isNearBottom(element) {
+      return element.scrollHeight - element.scrollTop - element.clientHeight < 100;
+    }
+
+    function errorPayloadMessage(data) {
+      const error = data && data.error;
+      if (typeof error === "string") return error;
+      if (error && typeof error.message === "string") return error.message;
+      if (data && typeof data.message === "string") return data.message;
+      return "";
+    }
+
+    function fallbackHTTPMessage(status) {
+      const messages = {
+        400: "Проверьте сообщение, режим и ID сессии.",
+        404: "Сессия не найдена. Обновляем список.",
+        409: "Эта сессия уже обрабатывает другой запрос. Повторите позже.",
+        413: "Запрос слишком большой.",
+        500: "Внутренняя ошибка локального приложения.",
+        502: "Локальная модель или RAG runtime недоступны.",
+        504: "Локальный pipeline не успел завершиться вовремя."
+      };
+      return messages[status] || `HTTP ${status}`;
+    }
+
+    async function request(url, options = {}) {
+      const response = await fetch(url, options);
+      const raw = await response.text();
+      let data = {};
+      if (raw.trim()) {
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          if (!response.ok) throw new APIError(response.status, fallbackHTTPMessage(response.status), {});
+          throw new Error("Сервер вернул некорректный JSON.");
+        }
+      }
+      if (!response.ok) {
+        throw new APIError(response.status, errorPayloadMessage(data) || fallbackHTTPMessage(response.status), data);
+      }
+      return data;
+    }
+
+    function jsonOptions(method, body) {
+      return {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      };
+    }
+
+    function showToast(message, tone = "info", timeout = 5200) {
+      const toast = node("div", `toast${tone === "error" ? " error" : tone === "warning" ? " warning" : ""}`, message);
+      byId("toast-region").append(toast);
+      window.setTimeout(() => toast.remove(), timeout);
+    }
+
+    function setHealth(kind, text) {
+      const badge = byId("health-badge");
+      badge.classList.remove("ready", "error");
+      if (kind === "ready" || kind === "error") badge.classList.add(kind);
+      byId("health-text").textContent = text;
+    }
+
+    function hasSessionPayload(payload) {
+      const session = asObject(payload.session);
+      return Array.isArray(payload.messages) || Array.isArray(session.messages);
+    }
+
+    function latestTurn(session) {
+      const turns = asArray(session.turns);
+      return turns.length ? turns[turns.length - 1] : null;
+    }
+
+    function normalizeLastTurn(payload, session) {
+      return firstDefined(payload.last_turn, payload.trace, session.last_turn, latestTurn(session), null);
+    }
+
+    function applyView(payload, options = {}) {
+      const session = asObject(payload.session);
+      const newSessionID = safeText(firstDefined(payload.current_session_id, payload.session_id, session.id, state.currentSessionID), "");
+      if (newSessionID) state.currentSessionID = newSessionID;
+      if (Array.isArray(payload.sessions)) state.sessions = payload.sessions;
+      if (Array.isArray(payload.messages)) state.messages = payload.messages;
+      else if (Array.isArray(session.messages)) state.messages = session.messages;
+      if (payload.task_state) state.taskState = asObject(payload.task_state);
+      else if (session.task_state) state.taskState = asObject(session.task_state);
+      const last = normalizeLastTurn(payload, session);
+      if (last !== undefined && last !== null) {
+        state.lastTurn = last;
+        hydrateEvidence(last);
+      } else if (options.clearTurn) {
+        state.lastTurn = null;
+        state.sources = [];
+        state.citations = [];
+        state.claims = [];
+      }
+      const modes = firstDefined(payload.available_modes, payload.modes);
+      if (Array.isArray(modes) && modes.length) state.availableModes = modes.filter((mode) => modeLabels[mode]);
+      const selectedMode = safeText(firstDefined(payload.selected_mode, payload.mode, state.lastTurn && state.lastTurn.mode, state.mode), "task-memory");
+      if (modeLabels[selectedMode]) state.mode = selectedMode;
+      renderAll();
+    }
+
+    function hydrateEvidence(turn) {
+      const value = asObject(turn);
+      const rag = asObject(firstDefined(value.rag, value.rag_result));
+      if (Array.isArray(value.sources)) state.sources = value.sources;
+      else if (Array.isArray(rag.sources)) state.sources = rag.sources;
+      if (Array.isArray(value.citations)) state.citations = value.citations;
+      else if (Array.isArray(rag.citations)) state.citations = rag.citations;
+      if (Array.isArray(value.claims)) state.claims = value.claims;
+      else if (Array.isArray(rag.claims)) state.claims = rag.claims;
+    }
+
+    function renderAll() {
+      renderModes();
+      renderSessions();
+      renderChatHeader();
+      renderMessages();
+      renderNotice();
+      renderDiagnostics();
+      renderPipeline();
+      setComposerEnabled();
+    }
+
+    function renderModes() {
+      const select = byId("mode-select");
+      const active = state.mode;
+      select.replaceChildren();
+      for (const mode of state.availableModes) {
+        if (!modeLabels[mode]) continue;
+        const option = node("option", "", modeLabels[mode]);
+        option.value = mode;
+        option.selected = mode === active;
+        select.append(option);
+      }
+      if (![...select.options].some((option) => option.value === active)) state.mode = select.value || "task-memory";
+      byId("mode-note").textContent = modeCopy[state.mode] || "";
+    }
+
+    function renderSessions() {
+      const root = byId("session-list");
+      root.replaceChildren();
+      const sessions = [...asArray(state.sessions)].sort((a, b) => {
+        const aTime = new Date(a.updated_at || 0).getTime();
+        const bTime = new Date(b.updated_at || 0).getTime();
+        return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
+      });
+      byId("session-count").textContent = `${sessions.length} persistent`;
+      if (!sessions.length) {
+        const empty = node("div", "empty-state");
+        empty.append(node("strong", "", "Сессий пока нет"), node("span", "", "Создайте первую persistent-сессию."));
+        root.append(empty);
+        return;
+      }
+      for (const session of sessions) {
+        const id = safeText(session.id, "");
+        if (!id) continue;
+        const item = node("article", `session-item${id === state.currentSessionID ? " active" : ""}`);
+        const select = node("button", "session-select");
+        select.type = "button";
+        select.setAttribute("aria-current", id === state.currentSessionID ? "page" : "false");
+        select.append(node("span", "session-id", id));
+        const count = Number(firstDefined(session.message_count, asArray(session.messages).length, 0));
+        const version = safeText(session.version, "—");
+        select.append(node("span", "session-meta", `v${version} · ${count} сообщ. · ${formatDate(session.updated_at)}`));
+        select.addEventListener("click", () => selectSession(id));
+        const remove = node("button", "session-delete", "×");
+        remove.type = "button";
+        remove.setAttribute("aria-label", `Удалить сессию ${id}`);
+        remove.addEventListener("click", () => askDeleteSession(id));
+        item.append(select, remove);
+        root.append(item);
+      }
+    }
+
+    function renderChatHeader() {
+      byId("current-session").textContent = state.currentSessionID || "Сессия не выбрана";
+      const summary = state.sessions.find((session) => session.id === state.currentSessionID);
+      byId("current-session-meta").textContent = summary
+        ? `v${safeText(summary.version)} · ${Number(summary.message_count || 0)} сообщений · ${formatDate(summary.updated_at)}`
+        : state.currentSessionID ? "persistent session" : "Создайте новый чат";
+      byId("turn-status").textContent = state.pending
+        ? "Pipeline выполняется"
+        : safeText(state.lastTurn && state.lastTurn.status, "Ожидается turn");
+    }
+
+    function roleLabel(role) {
+      return role === "user" ? "Вы" : "Ассистент";
+    }
+
+    function renderMessages() {
+      const log = byId("message-log");
+      const stickToBottom = isNearBottom(log);
+      const root = byId("message-stack");
+      root.replaceChildren();
+      const messages = asArray(state.messages).filter((message) => message && (message.role === "user" || message.role === "assistant"));
+      if (!messages.length && !state.pending) {
+        const empty = node("div", "empty-state");
+        empty.append(node("strong", "", "Начните разговор"), node("span", "", "История, trace и task memory появятся после первого сообщения."));
+        root.append(empty);
+      } else {
+        for (const message of messages) root.append(messageNode(message));
+        if (state.pending && state.pending.sessionID === state.currentSessionID) root.append(pendingMessageNode());
+      }
+      if (stickToBottom || state.pending) window.requestAnimationFrame(() => { log.scrollTop = log.scrollHeight; });
+    }
+
+    function messageNode(message) {
+      const role = message.role === "user" ? "user" : "assistant";
+      const article = node("article", `message ${role}`);
+      const meta = node("div", "message-meta");
+      meta.append(node("span", "", roleLabel(role)));
+      if (message.id) meta.append(node("span", "", safeText(message.id)));
+      if (message.turn !== undefined) meta.append(node("span", "", `turn ${message.turn}`));
+      if (message.created_at) meta.append(node("time", "", formatDate(message.created_at)));
+      article.append(meta, node("div", "bubble", safeText(message.content, "")));
+      return article;
+    }
+
+    function pendingMessageNode() {
+      const article = node("article", "message assistant pending");
+      article.append(node("div", "message-meta", "Ассистент · обычный POST"));
+      const bubble = node("div", "bubble");
+      const dots = node("span", "pending-dots");
+      dots.setAttribute("aria-hidden", "true");
+      dots.append(node("i"), node("i"), node("i"));
+      const elapsed = Math.max(0, Math.floor((Date.now() - state.pending.startedAt) / 1000));
+      const label = node("span", "pending-label", `RAG pipeline работает · ${elapsed} с`);
+      bubble.append(dots, label);
+      article.append(bubble);
+      return article;
+    }
+
+    function renderNotice() {
+      const root = byId("turn-notice");
+      root.replaceChildren();
+      if (state.errorNotice) root.append(noticeNode("error", "Запрос завершился ошибкой", state.errorNotice));
+      const turn = asObject(state.lastTurn);
+      const status = safeText(turn.status, "");
+      const clarification = safeText(firstDefined(turn.clarification_question, turn.clarificationQuestion), "");
+      const abstention = safeText(firstDefined(turn.abstention_reason, turn.abstentionReason), "");
+      if (status === "insufficient_context") root.append(noticeNode("warning", "Недостаточно контекста", abstention || "RAG gate не пропустил ответ."));
+      else if (status === "memory_only") root.append(noticeNode("success", "Ответ из task memory", "Answer model для этого turn не вызывалась."));
+      else if (status === "error") root.append(noticeNode("error", "Ошибка pipeline", abstention || "Ответ сформирован в безопасном режиме."));
+      if (clarification) root.append(noticeNode("warning", "Нужно уточнение", clarification));
+      if (Boolean(firstDefined(turn.memory_update_failed, false))) root.append(noticeNode("warning", "Task memory не обновлена", "Предыдущее валидное состояние памяти сохранено; RAG turn продолжился."));
+      const persisted = safeText(firstDefined(turn.persisted_status, turn.persistedStatus), "");
+      if (persisted && persisted !== "committed") root.append(noticeNode("error", "Состояние сохранено частично", `Persisted status: ${persisted}. Показано состояние после повторной загрузки.`));
+    }
+
+    function noticeNode(tone, title, copy) {
+      const item = node("div", `notice ${tone}`);
+      item.append(node("strong", "", title), node("span", "", copy));
+      return item;
+    }
+
+    function renderDiagnostics() {
+      renderSources();
+      renderMemory();
+      renderTrace();
+      renderMetrics();
+      byId("count-sources").textContent = String(state.sources.length);
+      byId("count-memory").textContent = String(activeMemoryItems(state.taskState).length);
+    }
+
+    function panelEmpty(copy) {
+      const empty = node("div", "empty-state");
+      empty.append(node("strong", "", "Нет данных"), node("span", "", copy));
+      return empty;
+    }
+
+    function sectionTitle(title, count) {
+      const header = node("div", "section-title");
+      header.append(node("h3", "", title), node("span", "", String(count)));
+      return header;
+    }
+
+    function renderSources() {
+      const panel = byId("panel-sources");
+      panel.replaceChildren();
+      const stack = node("div", "diag-stack");
+      const sources = asArray(state.sources);
+      const claims = asArray(state.claims);
+      const citations = asArray(state.citations);
+      if (!sources.length && !claims.length) {
+        panel.append(panelEmpty("Источники S*/U*, exact quotes и claims появятся после ответа."));
+        return;
+      }
+      if (claims.length) {
+        stack.append(sectionTitle("Claims", claims.length));
+        for (const claim of claims) stack.append(claimCard(claim));
+      }
+      if (sources.length) {
+        stack.append(sectionTitle("Источники", sources.length));
+        for (const source of sources) stack.append(sourceCard(source, citations));
+      }
+      panel.append(stack);
+    }
+
+    function claimCard(claim) {
+      const card = node("article", "diag-card");
+      const header = node("header");
+      header.append(node("h4", "", safeText(claim.id, "Claim")), badgeNode(safeText(claim.kind, "claim"), safeText(claim.kind) === "memory" ? "memory" : "corpus"));
+      card.append(header, node("p", "memory-value", safeText(claim.text, "")));
+      const ids = asArray(firstDefined(claim.source_ids, claim.sourceIDs));
+      if (ids.length) card.append(chipRow(ids));
+      return card;
+    }
+
+    function sourceCard(source, citations) {
+      const id = safeText(source.id, "Source");
+      const memory = id.startsWith("U") || source.kind === "task_memory";
+      const card = node("article", "diag-card");
+      const header = node("header");
+      header.append(node("h4", "", id), badgeNode(memory ? "memory U" : "corpus S", memory ? "memory" : "corpus"));
+      card.append(header);
+      const metadata = node("dl", "diag-meta");
+      addDefinition(metadata, "Источник", safeSource(source.source));
+      addDefinition(metadata, "Раздел", safeText(source.section));
+      addDefinition(metadata, "Chunk", safeText(firstDefined(source.chunk_id, source.chunkID)));
+      if (source.cosine !== undefined) addDefinition(metadata, "Cosine", Number(source.cosine).toFixed(4));
+      if (source.rerank_score !== undefined) addDefinition(metadata, "Rerank", Number(source.rerank_score).toFixed(4));
+      if (source.memory_id) addDefinition(metadata, "Memory ID", source.memory_id);
+      if (source.source_turn_id) addDefinition(metadata, "Turn ID", source.source_turn_id);
+      card.append(metadata);
+      const related = citations.filter((citation) => safeText(firstDefined(citation.source_id, citation.sourceID), "") === id);
+      const quote = safeText(firstDefined(source.quote, related[0] && related[0].quote), "");
+      if (quote) card.append(node("blockquote", "quote", quote));
+      const claimIDs = related.flatMap((citation) => asArray(firstDefined(citation.claim_ids, citation.claimIDs)));
+      if (claimIDs.length) card.append(chipRow(claimIDs));
+      if (related.some((citation) => citation.exact_match === true)) card.append(badgeNode("exact match", "memory"));
+      return card;
+    }
+
+    function addDefinition(list, label, value) {
+      list.append(node("dt", "", label), node("dd", "", safeText(value)));
+    }
+
+    function badgeNode(text, tone = "") {
+      return node("span", `badge${tone ? ` ${tone}` : ""}`, text);
+    }
+
+    function chipRow(values) {
+      const row = node("div", "chip-row");
+      for (const value of values) row.append(node("span", "chip", safeText(value)));
+      return row;
+    }
+
+    function taskStateValue() {
+      return asObject(firstDefined(state.taskState, asObject(state.lastTurn).task_state_after, emptyTaskState()));
+    }
+
+    function memoryGroups(taskState) {
+      return [
+        ["Цель", taskState.goal ? [taskState.goal] : []],
+        ["Ограничения", asArray(taskState.constraints)],
+        ["Термины", asArray(taskState.terms)],
+        ["Решения", asArray(taskState.decisions)],
+        ["Уточнения", asArray(taskState.clarifications)],
+        ["Открытые вопросы", asArray(taskState.open_questions)],
+        ["Superseded history", asArray(firstDefined(taskState.superseded_history, taskState.history))]
+      ];
+    }
+
+    function activeMemoryItems(taskState) {
+      return memoryGroups(asObject(taskState)).slice(0, 6).flatMap((group) => group[1]);
+    }
+
+    function renderMemory() {
+      const panel = byId("panel-memory");
+      panel.replaceChildren();
+      const taskState = taskStateValue();
+      const groups = memoryGroups(taskState);
+      const total = groups.reduce((sum, group) => sum + group[1].length, 0);
+      if (!total) {
+        panel.append(panelEmpty("В task-memory режиме здесь появятся проверенные цели, ограничения и решения."));
+        return;
+      }
+      const stack = node("div", "diag-stack");
+      for (const [title, items] of groups) {
+        if (!items.length) continue;
+        stack.append(sectionTitle(title, items.length));
+        for (const item of items) stack.append(memoryCard(item, title === "Superseded history"));
+      }
+      panel.append(stack);
+    }
+
+    function memoryCard(item, archived) {
+      const card = node("article", "diag-card");
+      const header = node("header");
+      header.append(node("h4", "", safeText(item.id, "Memory item")), badgeNode(archived ? "superseded" : safeText(item.kind, "memory"), archived ? "warning" : "memory"));
+      card.append(header, node("p", "memory-value", safeText(item.value, "")));
+      const ids = [];
+      if (item.source_turn_id) ids.push(`turn ${item.source_turn_id}`);
+      if (item.supersedes) ids.push(`supersedes ${item.supersedes}`);
+      if (ids.length) card.append(chipRow(ids));
+      if (item.user_quote) card.append(node("p", "memory-quote", `«${item.user_quote}»`));
+      return card;
+    }
+
+    function traceValue() {
+      const turn = asObject(state.lastTurn);
+      const nested = asObject(firstDefined(turn.trace, turn.turn));
+      return Object.assign({}, nested, turn);
+    }
+
+    function resolutionValue(trace) {
+      const resolution = asObject(firstDefined(trace.resolution, trace.query_resolution));
+      const result = asObject(resolution.result);
+      return {
+        original: safeText(firstDefined(trace.original_question, trace.current_user_message, resolution.original_question), ""),
+        query: safeText(firstDefined(trace.search_query, result.search_query, resolution.search_query), ""),
+        fallback: Boolean(firstDefined(trace.resolver_fallback, resolution.fallback, false)),
+        usedTurnIDs: asArray(firstDefined(trace.used_turn_ids, result.used_turn_ids, resolution.used_turn_ids)),
+        usedMemoryIDs: asArray(firstDefined(trace.used_memory_ids, result.used_memory_ids, resolution.used_memory_ids))
+      };
+    }
+
+    function renderTrace() {
+      const panel = byId("panel-trace");
+      panel.replaceChildren();
+      if (!state.lastTurn) {
+        panel.append(panelEmpty("Query resolution, gate, validation и persistence появятся после turn."));
+        return;
+      }
+      const trace = traceValue();
+      const resolution = resolutionValue(trace);
+      const stack = node("div", "diag-stack");
+      const flow = node("div", "trace-flow");
+      flow.append(traceCard("Исходный вопрос", resolution.original || "—", "success"));
+      flow.append(traceCard("Resolved search query", resolution.query || "—", resolution.fallback ? "warning" : "success", resolution.fallback ? "fallback на исходный вопрос" : "resolver result"));
+      if (resolution.usedTurnIDs.length) flow.append(traceCard("Использованные turns", resolution.usedTurnIDs.join(", "), "success"));
+      if (resolution.usedMemoryIDs.length) flow.append(traceCard("Использованная memory", resolution.usedMemoryIDs.join(", "), "success"));
+      const gate = asObject(firstDefined(trace.gate, trace.relevance_gate));
+      if (Object.keys(gate).length) {
+        const gateText = `score ${safeText(gate.score)} · threshold ${safeText(gate.threshold)}`;
+        flow.append(traceCard("Relevance gate", gateText, gate.passed === false ? "warning" : "success", gate.passed === false ? safeText(gate.abstention_reason, "не пройден") : "пройден"));
+      }
+      const status = safeText(trace.status, "—");
+      flow.append(traceCard("Результат", status, status === "error" ? "error" : status === "insufficient_context" ? "warning" : "success", safeText(trace.abstention_reason, "")));
+      stack.append(flow);
+
+      const memoryAttempts = asArray(firstDefined(trace.memory_validation_attempts, trace.memoryValidationAttempts));
+      const validationAttempts = asArray(firstDefined(trace.validation_attempts, trace.validationAttempts));
+      const entailment = asArray(firstDefined(trace.entailment, trace.entailment_verdicts));
+      if (memoryAttempts.length) {
+        stack.append(sectionTitle("Memory validation", memoryAttempts.length));
+        for (const attempt of memoryAttempts) stack.append(attemptCard(attempt, "memory"));
+      }
+      if (validationAttempts.length) {
+        stack.append(sectionTitle("Quote validation", validationAttempts.length));
+        for (const attempt of validationAttempts) stack.append(attemptCard(attempt, "quote"));
+      }
+      if (entailment.length) {
+        stack.append(sectionTitle("Judge", entailment.length));
+        for (const verdict of entailment) stack.append(verdictCard(verdict));
+      }
+      const persisted = safeText(trace.persisted_status, "");
+      if (persisted || trace.session_version_before !== undefined || trace.session_version_after !== undefined) {
+        stack.append(sectionTitle("Persistence", 1));
+        const card = node("article", "diag-card");
+        const metadata = node("dl", "diag-meta");
+        addDefinition(metadata, "Статус", persisted || "—");
+        addDefinition(metadata, "Version", `${safeText(trace.session_version_before)} → ${safeText(trace.session_version_after)}`);
+        addDefinition(metadata, "History runes", safeText(trace.prompt_history_runes));
+        addDefinition(metadata, "Task state runes", safeText(trace.task_state_runes));
+        addDefinition(metadata, "Context runes", safeText(trace.final_context_runes));
+        card.append(metadata);
+        stack.append(card);
+      }
+      panel.append(stack);
+    }
+
+    function traceCard(title, value, tone, note = "") {
+      const card = node("article", `diag-card trace-step ${tone}`);
+      const header = node("header");
+      header.append(node("h4", "", title));
+      if (note) header.append(badgeNode(note, tone === "warning" ? "warning" : tone === "error" ? "error" : ""));
+      card.append(header, node("p", "memory-value", value));
+      return card;
+    }
+
+    function attemptCard(attempt, kind) {
+      const card = node("article", "diag-card");
+      const valid = attempt.valid === true;
+      const header = node("header");
+      header.append(node("h4", "", `Попытка ${safeText(attempt.attempt, "—")}`), badgeNode(valid ? "valid" : "invalid", valid ? "memory" : "error"));
+      card.append(header);
+      const errors = asArray(attempt.errors);
+      if (errors.length) {
+        const list = node("div", "diag-stack");
+        for (const error of errors) list.append(node("p", "memory-value", safeText(error.message || error)));
+        card.append(list);
+      }
+      if (attempt.raw) {
+        const details = node("details");
+        details.append(node("summary", "", kind === "memory" ? "Raw model output" : "Structured output"), node("pre", "", safeText(attempt.raw)));
+        card.append(details);
+      }
+      return card;
+    }
+
+    function verdictCard(verdict) {
+      const value = safeText(verdict.verdict, "unverifiable");
+      const tone = value === "supported" ? "memory" : value === "unsupported" ? "error" : "warning";
+      const card = node("article", "diag-card");
+      const header = node("header");
+      header.append(node("h4", "", safeText(firstDefined(verdict.claim_id, verdict.claimID), "Claim")), badgeNode(value, tone));
+      card.append(header, node("p", "memory-value", safeText(verdict.reason, "")));
+      return card;
+    }
+
+    function flattenNumeric(value, prefix = "", output = {}) {
+      for (const [key, item] of Object.entries(asObject(value))) {
+        const fullKey = prefix ? `${prefix}_${key}` : key;
+        if (typeof item === "number" && Number.isFinite(item)) output[fullKey] = item;
+        else if (item && typeof item === "object" && !Array.isArray(item)) flattenNumeric(item, fullKey, output);
+      }
+      return output;
+    }
+
+    function normalizedTokens(value) {
+      const flat = flattenNumeric(value);
+      const output = {};
+      for (const [key, number] of Object.entries(flat)) {
+        const normalized = key
+          .replace(/^generator_/, "answer_")
+          .replace(/_prompt_tokens$/, "_prompt")
+          .replace(/_completion_tokens$/, "_completion");
+        output[normalized] = number;
+      }
+      return output;
+    }
+
+    function renderMetrics() {
+      const panel = byId("panel-metrics");
+      panel.replaceChildren();
+      if (!state.lastTurn) {
+        panel.append(panelEmpty("Latency и token usage появятся после turn."));
+        return;
+      }
+      const trace = traceValue();
+      const latency = flattenNumeric(firstDefined(trace.latency, trace.timing, {}));
+      const tokens = normalizedTokens(firstDefined(trace.token_usage, trace.tokens, {}));
+      const stack = node("div", "diag-stack");
+      const latencyEntries = Object.entries(latency).filter(([key]) => latencyLabels[key]);
+      if (latencyEntries.length) {
+        stack.append(sectionTitle("Latency", latencyEntries.length));
+        const grid = node("div", "metric-grid");
+        for (const [key, value] of latencyEntries) grid.append(metricNode(formatDuration(value), latencyLabels[key], key.startsWith("total_")));
+        stack.append(grid);
+      }
+      const tokenEntries = Object.entries(tokens).filter(([key]) => tokenLabels[key]);
+      if (tokenEntries.length) {
+        stack.append(sectionTitle("Token usage", tokenEntries.length));
+        const grid = node("div", "metric-grid");
+        let total = 0;
+        for (const [key, value] of tokenEntries) {
+          total += value;
+          grid.append(metricNode(String(value), tokenLabels[key]));
+        }
+        grid.append(metricNode(String(total), "Всего tokens", true));
+        stack.append(grid);
+      }
+      if (!latencyEntries.length && !tokenEntries.length) stack.append(panelEmpty("Для этого turn метрики не возвращены."));
+      panel.append(stack);
+    }
+
+    function metricNode(value, label, total = false) {
+      const item = node("div", `metric${total ? " total" : ""}`);
+      item.append(node("strong", "", value), node("span", "", label));
+      return item;
+    }
+
+    function renderPipeline() {
+      const root = byId("pipeline");
+      root.classList.toggle("busy", Boolean(state.pending));
+      const steps = {};
+      for (const element of root.querySelectorAll("[data-stage]")) {
+        element.classList.remove("done", "skipped", "warn", "fail");
+        steps[element.getAttribute("data-stage")] = element;
+      }
+      if (!state.lastTurn || state.pending) return;
+      const trace = traceValue();
+      const status = safeText(trace.status, "");
+      const mode = safeText(firstDefined(trace.mode, state.mode), state.mode);
+      const memoryOnly = status === "memory_only";
+      markStep(steps.memory, mode === "task-memory" ? (trace.memory_update_failed ? "warn" : "done") : "skipped");
+      const resolution = resolutionValue(trace);
+      markStep(steps.resolver, mode === "stateless" || memoryOnly ? "skipped" : resolution.fallback ? "warn" : "done");
+      markStep(steps.retrieval, memoryOnly ? "skipped" : status === "error" ? "fail" : "done");
+      const gate = asObject(firstDefined(trace.gate, trace.relevance_gate));
+      markStep(steps.gate, memoryOnly ? "skipped" : gate.passed === false || status === "insufficient_context" ? "warn" : "done");
+      markStep(steps.answer, memoryOnly ? "skipped" : status === "error" ? "fail" : status === "insufficient_context" ? "skipped" : "done");
+      const attempts = asArray(firstDefined(trace.validation_attempts, trace.validationAttempts));
+      markStep(steps.validation, memoryOnly || status === "insufficient_context" ? "skipped" : attempts.some((attempt) => attempt.valid === false) && !attempts.some((attempt) => attempt.valid === true) ? "warn" : "done");
+      const entailment = asArray(firstDefined(trace.entailment, trace.entailment_verdicts));
+      markStep(steps.judge, entailment.length ? (entailment.some((item) => item.verdict === "unsupported") ? "warn" : "done") : "skipped");
+    }
+
+    function markStep(element, status) {
+      if (element && ["done", "skipped", "warn", "fail"].includes(status)) element.classList.add(status);
+    }
+
+    function setComposerEnabled() {
+      const disabled = Boolean(state.pending) || !state.currentSessionID;
+      byId("message-input").disabled = disabled;
+      byId("send-button").disabled = disabled;
+      byId("send-button").textContent = state.pending ? "Pipeline работает…" : "Отправить";
+      byId("mode-select").disabled = Boolean(state.pending);
+    }
+
+    async function bootstrap() {
+      setHealth("loading", "Подключаемся к local RAG…");
+      try {
+        const payload = await request("/api/bootstrap");
+        applyView(payload, { clearTurn: true });
+        setHealth("ready", "Local RAG готов · persistent store");
+      } catch (error) {
+        setHealth("error", "Local RAG недоступен");
+        state.errorNotice = error.message;
+        renderAll();
+        showToast(error.message, "error", 8000);
+      }
+    }
+
+    async function refreshSessions() {
+      try {
+        const payload = await request("/api/sessions");
+        if (Array.isArray(payload.sessions)) {
+          state.sessions = payload.sessions;
+          renderSessions();
+          renderChatHeader();
+        }
+      } catch (error) {
+        showToast(error.message, "warning");
+      }
+    }
+
+    async function loadSessionDetails(id, clearTurn = false) {
+      const payload = await request(`/api/sessions/${encodeURIComponent(id)}`);
+      if (state.currentSessionID !== id) return payload;
+      applyView(payload, { clearTurn });
+      return payload;
+    }
+
+    async function selectSession(id) {
+      if (!id || id === state.currentSessionID) return;
+      try {
+        const payload = await request("/api/sessions/select", jsonOptions("POST", { session_id: id }));
+        state.currentSessionID = safeText(firstDefined(payload.current_session_id, payload.session_id, asObject(payload.session).id, id), id);
+        state.messages = [];
+        state.taskState = emptyTaskState();
+        state.lastTurn = null;
+        state.sources = [];
+        state.citations = [];
+        state.claims = [];
+        state.errorNotice = null;
+        if (hasSessionPayload(payload)) applyView(payload, { clearTurn: true });
+        else await loadSessionDetails(state.currentSessionID, true);
+        await refreshSessions();
+        byId("message-input").focus();
+      } catch (error) {
+        showToast(error.message, "error");
+        if (error.status === 404) await bootstrap();
+      }
+    }
+
+    function generatedSessionID() {
+      const bytes = new Uint8Array(5);
+      window.crypto.getRandomValues(bytes);
+      const suffix = [...bytes].map((value) => value.toString(16).padStart(2, "0")).join("");
+      const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+      return `chat-${date}-${suffix}`;
+    }
+
+    async function createSession(id) {
+      const cleanID = id.trim();
+      if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(cleanID)) {
+        showToast("ID: 1–64 латинских символа, цифры, «_» или «-».", "warning");
+        return;
+      }
+      try {
+        const payload = await request("/api/sessions", jsonOptions("POST", { session_id: cleanID }));
+        state.currentSessionID = safeText(firstDefined(payload.current_session_id, payload.session_id, asObject(payload.session).id, cleanID), cleanID);
+        state.messages = [];
+        state.taskState = emptyTaskState();
+        state.lastTurn = null;
+        state.sources = [];
+        state.citations = [];
+        state.claims = [];
+        state.errorNotice = null;
+        if (hasSessionPayload(payload)) applyView(payload, { clearTurn: true });
+        else {
+          try { await loadSessionDetails(state.currentSessionID, true); }
+          catch { renderAll(); }
+        }
+        byId("session-id").value = "";
+        await refreshSessions();
+        byId("message-input").focus();
+      } catch (error) {
+        showToast(error.message, error.status === 409 ? "warning" : "error");
+      }
+    }
+
+    function askDeleteSession(id) {
+      state.deleteSessionID = id;
+      const copy = `Сессия «${id}» и её persistent history будут удалены. Это действие нельзя отменить.`;
+      const dialog = byId("delete-dialog");
+      if (typeof dialog.showModal !== "function") {
+        if (window.confirm(copy)) deleteSession();
+        return;
+      }
+      byId("delete-copy").textContent = copy;
+      dialog.showModal();
+    }
+
+    async function deleteSession() {
+      const id = state.deleteSessionID;
+      if (!id) return;
+      byId("delete-confirm").disabled = true;
+      try {
+        const payload = await request(`/api/sessions/${encodeURIComponent(id)}`, { method: "DELETE" });
+        byId("delete-dialog").close();
+        state.deleteSessionID = "";
+        if (id === state.currentSessionID) {
+          if (payload.current_session_id || payload.session) applyView(payload, { clearTurn: true });
+          else await bootstrap();
+        } else {
+          if (Array.isArray(payload.sessions)) state.sessions = payload.sessions;
+          await refreshSessions();
+        }
+        showToast(`Сессия ${id} удалена.`);
+      } catch (error) {
+        showToast(error.message, "error");
+      } finally {
+        byId("delete-confirm").disabled = false;
+      }
+    }
+
+    function startPending(sessionID) {
+      state.pending = { sessionID, startedAt: Date.now() };
+      window.clearInterval(state.pendingTimer);
+      state.pendingTimer = window.setInterval(() => {
+        if (!state.pending) return;
+        const label = document.querySelector(".pending-label");
+        if (label && state.pending.sessionID === state.currentSessionID) {
+          const elapsed = Math.max(0, Math.floor((Date.now() - state.pending.startedAt) / 1000));
+          label.textContent = `RAG pipeline работает · ${elapsed} с`;
+        }
+      }, 1000);
+      renderAll();
+    }
+
+    function stopPending() {
+      state.pending = null;
+      window.clearInterval(state.pendingTimer);
+      state.pendingTimer = null;
+    }
+
+    function turnFromChatResponse(payload, requestMode, prompt) {
+      const trace = asObject(payload.trace);
+      return Object.assign({}, trace, {
+        mode: safeText(payload.mode, requestMode),
+        status: safeText(payload.status, "answered"),
+        original_question: safeText(firstDefined(trace.original_question, prompt), prompt),
+        resolution: firstDefined(payload.resolution, trace.resolution, trace.query_resolution),
+        sources: asArray(payload.sources),
+        citations: asArray(payload.citations),
+        claims: asArray(payload.claims),
+        clarification_question: safeText(payload.clarification_question, ""),
+        memory_update_failed: Boolean(payload.memory_update_failed),
+        latency: firstDefined(payload.latency, trace.latency),
+        token_usage: firstDefined(payload.token_usage, trace.token_usage),
+        persisted_status: safeText(payload.persisted_status, ""),
+        abstention_reason: safeText(payload.abstention_reason, "")
+      });
+    }
+
+    async function sendMessage(message) {
+      const prompt = message.trim();
+      if (!prompt || state.pending || !state.currentSessionID) return;
+      const requestSessionID = state.currentSessionID;
+      const requestMode = state.mode;
+      state.errorNotice = null;
+      state.messages = [...state.messages, { role: "user", content: prompt, created_at: new Date().toISOString() }];
+      byId("message-input").value = "";
+      startPending(requestSessionID);
+      try {
+        const payload = await request("/api/chat", jsonOptions("POST", { session_id: requestSessionID, mode: requestMode, message: prompt }));
+        if (state.currentSessionID !== requestSessionID) return;
+        state.messages = [...state.messages, { role: "assistant", content: safeText(payload.answer, ""), created_at: new Date().toISOString() }];
+        state.taskState = asObject(firstDefined(payload.task_state, state.taskState));
+        state.lastTurn = turnFromChatResponse(payload, requestMode, prompt);
+        state.sources = asArray(payload.sources);
+        state.citations = asArray(payload.citations);
+        state.claims = asArray(payload.claims);
+        stopPending();
+        renderAll();
+        try { await loadSessionDetails(requestSessionID); } catch { /* Browser response remains usable. */ }
+        await refreshSessions();
+      } catch (error) {
+        const failedPayload = asObject(error.data);
+        if (state.currentSessionID === requestSessionID) {
+          state.errorNotice = error.message;
+          const partialTurn = turnFromChatResponse(failedPayload, requestMode, prompt);
+          const preservePartialTurn = Boolean(partialTurn.persisted_status || failedPayload.trace);
+          try {
+            await loadSessionDetails(requestSessionID);
+          } catch (reloadError) {
+            showToast(`Не удалось обновить сохранённое состояние: ${reloadError.message}`, "warning");
+          }
+          if (preservePartialTurn) {
+            state.lastTurn = partialTurn;
+            hydrateEvidence(partialTurn);
+          }
+          const messages = asArray(state.messages);
+          const lastUser = [...messages].reverse().find((item) => item.role === "user");
+          if ((!lastUser || lastUser.content !== prompt) && !byId("message-input").value) byId("message-input").value = prompt;
+        }
+        showToast(error.message, error.status === 409 || error.status === 504 ? "warning" : "error", 8000);
+      } finally {
+        stopPending();
+        if (state.currentSessionID === requestSessionID) renderAll();
+      }
+    }
+
+    function activateTab(name, focus = false) {
+      const tabs = [...byId("diagnostic-tabs").querySelectorAll("[role=tab]")];
+      for (const tab of tabs) {
+        const selected = tab.getAttribute("data-tab") === name;
+        tab.setAttribute("aria-selected", selected ? "true" : "false");
+        tab.tabIndex = selected ? 0 : -1;
+        const panel = byId(`panel-${tab.getAttribute("data-tab")}`);
+        panel.hidden = !selected;
+        if (selected && focus) tab.focus();
+      }
+    }
+
+    function bindEvents() {
+      byId("session-create").addEventListener("submit", (event) => {
+        event.preventDefault();
+        createSession(byId("session-id").value);
+      });
+      byId("new-chat").addEventListener("click", () => createSession(generatedSessionID()));
+      byId("mode-select").addEventListener("change", (event) => {
+        if (modeLabels[event.target.value]) state.mode = event.target.value;
+        byId("mode-note").textContent = modeCopy[state.mode] || "";
+      });
+      byId("composer").addEventListener("submit", (event) => {
+        event.preventDefault();
+        sendMessage(byId("message-input").value);
+      });
+      byId("message-input").addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+          event.preventDefault();
+          byId("composer").requestSubmit();
+        }
+      });
+      byId("delete-cancel").addEventListener("click", () => byId("delete-dialog").close());
+      byId("delete-confirm").addEventListener("click", deleteSession);
+      byId("delete-dialog").addEventListener("close", () => { state.deleteSessionID = ""; });
+      const tabs = [...byId("diagnostic-tabs").querySelectorAll("[role=tab]")];
+      for (const tab of tabs) {
+        tab.addEventListener("click", () => activateTab(tab.getAttribute("data-tab")));
+        tab.addEventListener("keydown", (event) => {
+          const current = tabs.indexOf(tab);
+          let next = current;
+          if (event.key === "ArrowRight") next = (current + 1) % tabs.length;
+          else if (event.key === "ArrowLeft") next = (current - 1 + tabs.length) % tabs.length;
+          else if (event.key === "Home") next = 0;
+          else if (event.key === "End") next = tabs.length - 1;
+          else return;
+          event.preventDefault();
+          activateTab(tabs[next].getAttribute("data-tab"), true);
+        });
+      }
+    }
+
+    bindEvents();
+    renderAll();
+    bootstrap();
+  </script>
+</body>
+</html>

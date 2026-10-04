@@ -1,0 +1,132 @@
+[
+  {
+    "id": "q01-multi-mcp-routing",
+    "query": "Как единый агент объединяет каталоги нескольких MCP-серверов и маршрутизирует tool calls владельцу инструмента?",
+    "expected_sources": [
+      "day-18/README.md",
+      "day-18/internal/mcpmulti/connector.go",
+      "day-20/README.md",
+      "day-20/internal/mcpclient/client.go"
+    ],
+    "expected_sections": ["Архитектура", "type Connector", "func Connect", "method (*Client).CallTool"],
+    "explanation": "Описание агрегации tools/list и таблицы владельцев инструментов находится в документации и MCP-клиентах дней 18 и 20."
+  },
+  {
+    "id": "q02-monitor-claim",
+    "query": "Как планировщик мониторинга атомарно захватывает просроченный запуск и не допускает дубликаты после перезапуска?",
+    "expected_sources": [
+      "day-18/internal/store/store.go",
+      "day-18/internal/currencystore/store.go",
+      "day-18/README.md"
+    ],
+    "expected_sections": ["Надёжность", "method (*Store).ClaimDueRun"],
+    "explanation": "SQLite-модели и раздел о надёжности описывают транзакционный claim, уникальные запуски и восстановление."
+  },
+  {
+    "id": "q03-decimal-currency",
+    "query": "Почему валютные суммы не вычисляются через float64 и как реализована точная десятичная арифметика?",
+    "expected_sources": [
+      "day-18/internal/decimal/decimal.go",
+      "day-18/README.md"
+    ],
+    "expected_sections": ["func Parse", "method (Decimal).Mul", "Что умеет агент"],
+    "explanation": "Пакет decimal хранит и вычисляет значения без двоичных ошибок float64; README объясняет это решение."
+  },
+  {
+    "id": "q04-github-http-safety",
+    "query": "Какие ограничения и проверки применяются при запросе метаданных публичного репозитория GitHub?",
+    "expected_sources": [
+      "day-17/internal/githubapi/client.go",
+      "day-17/README.md",
+      "day-18/internal/githubapi/client.go"
+    ],
+    "expected_sections": ["GitHub REST API", "method (*Client).GetRepository"],
+    "explanation": "GitHub-клиенты проверяют имена, HTTP-коды, лимит ответа, rate limit и запрет приватных репозиториев."
+  },
+  {
+    "id": "q05-agent-tool-loop",
+    "query": "Как агент сохраняет tool_call_id и передаёт результат MCP-инструмента обратно модели в следующем раунде?",
+    "expected_sources": [
+      "day-17/internal/agent/agent.go",
+      "day-17/README.md",
+      "day-19/internal/agent/agent.go",
+      "day-20/internal/agent/agent.go"
+    ],
+    "expected_sections": ["Результат", "method (*Agent).Run"],
+    "explanation": "Agent loop добавляет tool result в историю с исходным идентификатором вызова перед повторным sampling."
+  },
+  {
+    "id": "q06-pipeline-integrity",
+    "query": "Как в композиции search summarize save_to_file проверяется целостность данных между этапами?",
+    "expected_sources": [
+      "day-19/README.md",
+      "day-19/internal/pipeline/server.go",
+      "day-19/internal/pipeline/summarize.go",
+      "day-19/internal/pipeline/save.go"
+    ],
+    "expected_sections": ["День 19 — композиция MCP-инструментов", "func NewServer"],
+    "explanation": "День 19 связывает результаты стадий по точным данным и SHA-256, не доверяя произвольным аргументам модели."
+  },
+  {
+    "id": "q07-artifact-sandbox",
+    "query": "Как Artifact MCP безопасно сохраняет отчёты и предотвращает выход пути за разрешённый каталог?",
+    "expected_sources": [
+      "day-20/internal/artifact/store.go",
+      "day-20/internal/artifact/server.go",
+      "day-20/README.md"
+    ],
+    "expected_sections": ["method (*Store).Save", "func NewServer", "Сервисы"],
+    "explanation": "Artifact Store очищает и валидирует относительные пути и выполняет запись внутри выделенного каталога."
+  },
+  {
+    "id": "q08-session-history",
+    "query": "Как web-приложение хранит историю диалога по session cookie и что делает кнопка нового диалога?",
+    "expected_sources": [
+      "day-18/internal/web/sessions.go",
+      "day-18/internal/web/server.go",
+      "day-18/README.md"
+    ],
+    "expected_sections": ["История диалога", "type sessionStore"],
+    "explanation": "Web-слой использует HttpOnly cookie и ограниченную историю, а очистка чата не удаляет расписания MCP."
+  },
+  {
+    "id": "q09-mcp-handshake",
+    "query": "Как минимальный Go MCP-клиент устанавливает соединение и получает список tools с пагинацией?",
+    "expected_sources": [
+      "day-16/internal/mcpdemo/client.go",
+      "day-16/README.md"
+    ],
+    "expected_sections": ["func ConnectAndListTools", "Локальный запуск"],
+    "explanation": "Первый MCP-проект показывает handshake Streamable HTTP и полный tools/list через официальный SDK."
+  },
+  {
+    "id": "q10-wikipedia-search",
+    "query": "Как knowledge search обращается к Wikipedia, ограничивает ответ и обрабатывает пустые результаты?",
+    "expected_sources": [
+      "day-19/internal/pipeline/wikipedia.go",
+      "day-19/internal/pipeline/wikipedia_test.go"
+    ],
+    "expected_sections": ["method (*WikipediaClient).Search"],
+    "explanation": "Wikipedia HTTP-клиент реализует поиск, ограничения ответа, нормализацию документов и ошибки внешнего API."
+  },
+  {
+    "id": "q11-budget-fallback",
+    "query": "Что происходит, когда агент исчерпал бюджет MCP-вызовов или раундов модели?",
+    "expected_sources": [
+      "day-20/internal/agent/agent.go",
+      "day-20/README.md"
+    ],
+    "expected_sections": ["День 20 — Orchestration MCP", "method (*Agent).Run"],
+    "explanation": "День 20 отключает tools и просит сформировать ответ по уже собранным данным вместо аварийного завершения."
+  },
+  {
+    "id": "q12-exchange-schedule",
+    "query": "Как создать, перечислить и отменить расписание мониторинга валютного курса через MCP?",
+    "expected_sources": [
+      "day-18/internal/mcpcurrency/server.go",
+      "day-18/README.md"
+    ],
+    "expected_sections": ["Что умеет агент", "func NewServer"],
+    "explanation": "Currency MCP регистрирует schedule/list/cancel/summary инструменты со строгими JSON Schema."
+  }
+]

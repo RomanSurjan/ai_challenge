@@ -1,0 +1,86 @@
+{
+  "generated_at": "2026-10-04T17:33:21.322538Z",
+  "index": "../day-21/artifacts/index-structural.json",
+  "embedding_model": "qwen3-embedding:0.6b",
+  "dataset": "eval/questions.json",
+  "dataset_sha256": "013e72b5fe3ce770b526ee47e63ec7d17b07aca3e2bcdd89e9ea25f42c2ddbe7",
+  "candidate_k": 20,
+  "final_k": 5,
+  "alpha": 0.7,
+  "beta": 0.2,
+  "gamma": 0.1,
+  "values": [
+    {
+      "threshold": 0.3,
+      "expected_source_recall_after_filtering": 0.45833333333333337,
+      "expected_source_precision": 0.34,
+      "hit_at_1": 0.7,
+      "mrr": 0.82,
+      "average_remaining_chunks": 5,
+      "rejected_fraction": 0,
+      "empty_context_rate": 0
+    },
+    {
+      "threshold": 0.35,
+      "expected_source_recall_after_filtering": 0.45833333333333337,
+      "expected_source_precision": 0.34,
+      "hit_at_1": 0.7,
+      "mrr": 0.82,
+      "average_remaining_chunks": 5,
+      "rejected_fraction": 0.005,
+      "empty_context_rate": 0
+    },
+    {
+      "threshold": 0.4,
+      "expected_source_recall_after_filtering": 0.45833333333333337,
+      "expected_source_precision": 0.34,
+      "hit_at_1": 0.7,
+      "mrr": 0.82,
+      "average_remaining_chunks": 5,
+      "rejected_fraction": 0.06,
+      "empty_context_rate": 0
+    },
+    {
+      "threshold": 0.45,
+      "expected_source_recall_after_filtering": 0.45833333333333337,
+      "expected_source_precision": 0.37,
+      "hit_at_1": 0.7,
+      "mrr": 0.82,
+      "average_remaining_chunks": 4.7,
+      "rejected_fraction": 0.16,
+      "empty_context_rate": 0
+    },
+    {
+      "threshold": 0.5,
+      "expected_source_recall_after_filtering": 0.4083333333333334,
+      "expected_source_precision": 0.4133333333333334,
+      "hit_at_1": 0.7,
+      "mrr": 0.8,
+      "average_remaining_chunks": 4.4,
+      "rejected_fraction": 0.445,
+      "empty_context_rate": 0
+    },
+    {
+      "threshold": 0.55,
+      "expected_source_recall_after_filtering": 0.39166666666666666,
+      "expected_source_precision": 0.4800000000000001,
+      "hit_at_1": 0.7,
+      "mrr": 0.75,
+      "average_remaining_chunks": 3.3,
+      "rejected_fraction": 0.63,
+      "empty_context_rate": 0
+    },
+    {
+      "threshold": 0.6,
+      "expected_source_recall_after_filtering": 0.325,
+      "expected_source_precision": 0.4800000000000001,
+      "hit_at_1": 0.6,
+      "mrr": 0.65,
+      "average_remaining_chunks": 2,
+      "rejected_fraction": 0.87,
+      "empty_context_rate": 0.2
+    }
+  ],
+  "selected_threshold": 0.45,
+  "selection_rule": "highest MRR among thresholds retaining at least 95% of maximum recall; ties: precision, lower empty-context rate, then higher threshold"
+}

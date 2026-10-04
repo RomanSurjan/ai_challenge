@@ -1,0 +1,1587 @@
+{
+  "generated_at": "2026-10-04T17:31:14.346835Z",
+  "chat_model": "qwen2.5:3b",
+  "embedding_model": "qwen3-embedding:0.6b",
+  "index": "../day-21/artifacts/index-structural.json",
+  "top_k": 5,
+  "temperature": 0,
+  "max_tokens": 512,
+  "results": [
+    {
+      "id": "q01-multi-mcp-routing",
+      "question": "Как единый агент объединяет каталоги нескольких MCP-серверов и маршрутизирует tool calls владельцу инструмента?",
+      "expected_answer": "Агент получает tools/list каждой MCP-сессии, объединяет определения для модели и хранит отображение имени инструмента на сессию-владельца; выбранный моделью tools/call отправляется только этому владельцу.",
+      "required_concepts": [
+        {
+          "name": "агрегация tools/list",
+          "alternatives": [
+            "объединённый tools/list",
+            "объединяет каталоги",
+            "собирает инструменты"
+          ]
+        },
+        {
+          "name": "таблица владельцев",
+          "alternatives": [
+            "владельца каждого инструмента",
+            "таблица владельцев",
+            "отображение имени инструмента"
+          ]
+        },
+        {
+          "name": "маршрутизация в MCP-сессию",
+          "alternatives": [
+            "соответствующую mcp-сессию",
+            "сессию-владельца",
+            "нужному mcp-серверу"
+          ]
+        }
+      ],
+      "expected_sources": [
+        "day-18/README.md",
+        "day-18/internal/mcpmulti/connector.go",
+        "day-20/README.md",
+        "day-20/internal/mcpclient/client.go"
+      ],
+      "plain": {
+        "mode": "plain",
+        "question": "Как единый агент объединяет каталоги нескольких MCP-серверов и маршрутизирует tool calls владельцу инструмента?",
+        "answer": "Единый агент объединяет каталоги нескольких MCP-серверов, создавая единую точку доступа для управления всеми серверами. Он маршрутизирует tool calls, анализируя запросы и направляя их на соответствующий сервер. Администратор получает обновленную информацию о состоянии всех серверов и может выполнять операции, как будто они происходят на одном и том же месте.",
+        "model": "qwen2.5:3b",
+        "citations": [],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 5094,
+          "prompt_tokens": 144,
+          "completion_tokens": 96,
+          "attempts": 1,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "rag": {
+        "mode": "rag",
+        "question": "Как единый агент объединяет каталоги нескольких MCP-серверов и маршрутизирует tool calls владельцу инструмента?",
+        "answer": "Единый агент объединяет каталоги нескольких MCP-серверов и маршрутизирует tool calls владельцу инструмента с использованием информации из [S1] и [S2]. Агент подключается к двум независимым MCP-серверам, видит оба набора инструментов и направляет вызовы в правильный сервер. Он также объединяет каталоги инструментов из нескольких MCP-серверов и маршрутизирует каждый вызов обратно в MCP-владельца, как указано в [S2].",
+        "model": "qwen2.5:3b",
+        "index": "../day-21/artifacts/index-structural.json",
+        "retrieval": {
+          "top_k": 5,
+          "duration_ms": 57,
+          "chunks": [
+            {
+              "rank": 1,
+              "score": 0.7182587435176594,
+              "chunk_id": "structural-233b0f6da63ac99f66752b43",
+              "source": "day-18/DEMO.md",
+              "section": "Day 18 — демонстрация единого агента",
+              "text": "# Day 18 — демонстрация единого агента\n\nСценарий доказывает, что один агент подключается к двум независимым MCP, видит оба набора инструментов и направляет вызовы в правильный сервер."
+            },
+            {
+              "rank": 2,
+              "score": 0.6197974566573209,
+              "chunk_id": "structural-9adc7c97de777669396a5699",
+              "source": "day-20/README.md",
+              "section": "Day 20 — Orchestration MCP",
+              "text": "# Day 20 — Orchestration MCP\n\nСамостоятельный Go-модуль с тремя независимыми Streamable HTTP MCP-серверами и агентом DeepSeek. Агент получает объединённый `tools/list`, сохраняет владельца каждого инструмента и маршрутизирует каждый `tools/call` в соответствующую MCP-сессию."
+            },
+            {
+              "rank": 3,
+              "score": 0.6005167220836319,
+              "chunk_id": "structural-4e3a63032d3beaf99ea33874",
+              "source": "day-18/README.md",
+              "section": "Day 18 — Unified persistent MCP agent",
+              "text": "# Day 18 — Unified persistent MCP agent\n\nОдин Go-проект и один DeepSeek-агент для двух задач: постоянный мониторинг публичных GitHub-репозиториев и справочных валютных курсов. GitHub и валюты обслуживают два независимых Streamable HTTP MCP-сервера. Агент получает список серверов, объединяет их каталоги инструментов и маршрутизирует каждый вызов обратно в MCP-владельца."
+            },
+            {
+              "rank": 4,
+              "score": 0.5708554041276772,
+              "chunk_id": "structural-1e2b0064262053e9b004765a",
+              "source": "day-16/README.md",
+              "section": "Day 16 — MCP connection and tools/list",
+              "text": "# Day 16 — MCP connection and tools/list\n\nМинимальный MCP-проект на официальном Go SDK:\n\n- `cmd/server` поднимает Streamable HTTP MCP endpoint `/mcp`;\n- сервер регистрирует инструмент `server_status`;\n- `cmd/client` устанавливает MCP-соединение и получает полный список tools;\n- интеграционный тест проверяет handshake, версию протокола и схему tool;\n- Docker-контейнер запущен на VPS и доступен только через SSH-туннель."
+            },
+            {
+              "rank": 5,
+              "score": 0.5594852939260455,
+              "chunk_id": "structural-07ca3e8180ef5ea440236ae8",
+              "source": "day-17/README.md",
+              "section": "Day 17 — GitHub MCP Agent \u003e Результат",
+              "text": "## Результат\n\nПолный цикл выглядит так:\n\n1. агент подключается к MCP по Streamable HTTP;\n2. `tools/list` возвращает `get_github_repository` и JSON Schema;\n3. схема без изменений передаётся DeepSeek как function tool;\n4. запрос к модели использует `tool_choice: auto`;\n5. модель формирует `owner` и `repository`;\n6. агент выполняет MCP `tools/call`;\n7. MCP-сервер вызывает `GET /repos/{owner}/{repository}`;\n8. GitHub metadata возвращается как `structuredContent`;\n9. агент добавляет результат в историю как `role=tool` с исходным\n   `tool_call_id`;\n10. следующий sampling-вызов формирует финальный ответ.\n\nВ коде нет поиска ключевых слов, регулярных выражений для определения намерения,\nпринудительного tool call или прямого обращения агента к GitHub в обход MCP.\n\nФактическая трассировка: [artifacts/local-real-model-smoke.json](artifacts/local-real-model-smoke.json).\nУдалённая трассировка: [artifacts/remote-real-model-smoke.json](artifacts/remote-real-model-smoke.json).\nПроверка контейнеров: [artifacts/local-container-verification.txt](artifacts/local-container-verification.txt)."
+            }
+          ]
+        },
+        "citations": [
+          {
+            "id": "[S1]",
+            "source": "day-18/DEMO.md",
+            "section": "Day 18 — демонстрация единого агента",
+            "chunk_id": "structural-233b0f6da63ac99f66752b43"
+          },
+          {
+            "id": "[S2]",
+            "source": "day-20/README.md",
+            "section": "Day 20 — Orchestration MCP",
+            "chunk_id": "structural-9adc7c97de777669396a5699"
+          }
+        ],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 5298,
+          "prompt_tokens": 1371,
+          "completion_tokens": 137,
+          "attempts": 1,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "plain_concepts": {
+        "matched": 1,
+        "total": 3,
+        "coverage": 0.3333333333333333,
+        "all": false,
+        "missing": [
+          "таблица владельцев",
+          "маршрутизация в MCP-сессию"
+        ]
+      },
+      "rag_concepts": {
+        "matched": 1,
+        "total": 3,
+        "coverage": 0.3333333333333333,
+        "all": false,
+        "missing": [
+          "таблица владельцев",
+          "маршрутизация в MCP-сессию"
+        ]
+      },
+      "top_k_source_recall": 0.5,
+      "cited_source_recall": 0.25
+    },
+    {
+      "id": "q02-monitor-claim",
+      "question": "Как планировщик мониторинга атомарно захватывает просроченный запуск и не допускает дубликаты после перезапуска?",
+      "expected_answer": "ClaimDueRun работает в транзакции: проверяет активное расписание и срок, создаёт running-запуск и переносит next_run. Уникальность пары schedule_id/scheduled_for блокирует дубль, а SQLite сохраняет состояние между перезапусками.",
+      "required_concepts": [
+        {
+          "name": "транзакционный claim",
+          "alternatives": [
+            "в транзакции",
+            "транзакционный",
+            "атомарно"
+          ]
+        },
+        {
+          "name": "уникальность scheduled run",
+          "alternatives": [
+            "unique(schedule_id, scheduled_for)",
+            "уникальность пары",
+            "schedule_id и scheduled_for"
+          ]
+        },
+        {
+          "name": "персистентность SQLite",
+          "alternatives": [
+            "sqlite",
+            "сохраняется в базе",
+            "после перезапуска"
+          ]
+        }
+      ],
+      "expected_sources": [
+        "day-18/internal/store/store.go",
+        "day-18/internal/currencystore/store.go",
+        "day-18/README.md"
+      ],
+      "plain": {
+        "mode": "plain",
+        "question": "Как планировщик мониторинга атомарно захватывает просроченный запуск и не допускает дубликаты после перезапуска?",
+        "answer": "Планировщик мониторинга, используя механизмы контроля за атомарным захватом, может захватывать просроченный запуск, чтобы избежать дубликатов после перезапуска. Это достигается путем установки специального состояния или метки, которая указывает на то, что запуск уже был выполнен. При перезапуске планировщик проверяет это состояние и не выполняет повторный запуск, если он уже был выполнен.",
+        "model": "qwen2.5:3b",
+        "citations": [],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 2823,
+          "prompt_tokens": 153,
+          "completion_tokens": 117,
+          "attempts": 1,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "rag": {
+        "mode": "rag",
+        "question": "Как планировщик мониторинга атомарно захватывает просроченный запуск и не допускает дубликаты после перезапуска?",
+        "answer": "Планировщик мониторинга атомарно захватывает просроченный запуск и не допускает дубликаты после перезапуска, используя уникальную пару `(schedule_id, scheduled_for)`. Это достигается благодаря использованию постоянных SQLite-расписаний, атомарного claim и транзакций, как указано в [S1]. В случае просроченного запуска, планировщик восстанавливает незавершённые `running`-запуски и завершает расписание при достижении максимального количества запусков (`max_runs`). Отмена сохраняет всю историю, включая отменённые запуски.",
+        "model": "qwen2.5:3b",
+        "index": "../day-21/artifacts/index-structural.json",
+        "retrieval": {
+          "top_k": 5,
+          "duration_ms": 50,
+          "chunks": [
+            {
+              "rank": 1,
+              "score": 0.5724912194761278,
+              "chunk_id": "structural-48f25c926c4b8f19033a5f25",
+              "source": "day-18/README.md",
+              "section": "Day 18 — Unified persistent MCP agent \u003e Надёжность",
+              "text": "## Надёжность\n\nОба планировщика используют постоянные SQLite-расписания, атомарный claim и уникальную пару `(schedule_id, scheduled_for)`. Первый запуск назначается сразу; пропущенные интервалы не создают лавину catch-up запросов; незавершённые `running`-запуски восстанавливаются после падения; `max_runs` завершает расписание; отмена сохраняет всю историю. Включены foreign keys, `busy_timeout`, WAL и транзакции. `SIGTERM` останавливает оба scheduler loop и корректно закрывает HTTP/SQLite."
+            },
+            {
+              "rank": 2,
+              "score": 0.4915009044284478,
+              "chunk_id": "structural-19c812c780af19908167c6c8",
+              "source": "day-18/DEMO.md",
+              "section": "Day 18 — демонстрация единого агента \u003e 3. GitHub-монитор",
+              "text": "## 3. GitHub-монитор\n\n\u003e Создай мониторинг репозитория modelcontextprotocol/go-sdk раз в минуту и останови после двух запусков.\n\nПроверьте в trace вызов `schedule_repository_monitor`, настоящий `schedule_id` и карточку в колонке GitHub. Первый снимок назначается сразу."
+            },
+            {
+              "rank": 3,
+              "score": 0.4409869801405863,
+              "chunk_id": "structural-f7e892bda05c23223164b190",
+              "source": "day-18/DEMO.md",
+              "section": "Day 18 — демонстрация единого агента \u003e 8. Отмена",
+              "text": "## 8. Отмена\n\nСоздайте неограниченный монитор, затем попросите:\n\n\u003e Останови мониторинг GBP/EUR и покажи итоговое состояние.\n\nАгент находит ID через `list_exchange_rate_monitors` и вызывает `cancel_exchange_rate_monitor`. Повторная отмена безопасна и возвращает `already_cancelled: true`; история остаётся доступной. Аналогично работает GitHub-инструмент `cancel_repository_monitor`."
+            },
+            {
+              "rank": 4,
+              "score": 0.4409058649037461,
+              "chunk_id": "structural-96548f4c0bfe5d4877621c36",
+              "source": "day-18/internal/scheduler/scheduler_test.go",
+              "section": "func TestRunOnceRecoversOverdueScheduleWithoutRapidCatchupAndHonorsMaxRuns",
+              "text": "func TestRunOnceRecoversOverdueScheduleWithoutRapidCatchupAndHonorsMaxRuns(t *testing.T) {\n\tctx := context.Background()\n\tstart := time.Date(2026, 9, 26, 10, 0, 0, 0, time.UTC)\n\tmaxRuns := int64(2)\n\ts := schedulerStore(t)\n\tcreated := scheduleAt(t, s, start, \u0026maxRuns)\n\tclock := \u0026fakeClock{now: start.Add(10 * time.Minute)}\n\tgithub := \u0026fakeGitHub{}\n\tplanner := New(s, github)\n\tplanner.Clock = clock\n\tif err := planner.RunOnce(ctx); err != nil {\n\t\tt.Fatal(err)\n\t}\n\tafterFirst, _ := s.GetSchedule(ctx, created.ID)\n\tif afterFirst.NextRunAt == nil || !afterFirst.NextRunAt.Equal(start.Add(11*time.Minute)) || github.calls.Load() != 1 {\n\t\tt.Fatalf(\"overdue next run = %+v, calls=%d\", afterFirst, github.calls.Load())\n\t}\n\tclock.Set(start.Add(11 * time.Minute))\n\tif err := planner.RunOnce(ctx); err != nil {\n\t\tt.Fatal(err)\n\t}\n\tcompleted, _ := s.GetSchedule(ctx, created.ID)\n\tif completed.Status != store.StatusCompleted || completed.NextRunAt != nil || completed.RunCount != 2 {\n\t\tt.Fatalf(\"max-runs schedule = %+v\", completed)\n\t}\n}"
+            },
+            {
+              "rank": 5,
+              "score": 0.41729618411571967,
+              "chunk_id": "structural-3449ca4500e3ce80096578cc",
+              "source": "day-18/internal/scheduler/scheduler_test.go",
+              "section": "func TestRunOnceExecutesDueButNotEarlyAndCalculatesNextRun",
+              "text": "func TestRunOnceExecutesDueButNotEarlyAndCalculatesNextRun(t *testing.T) {\n\tctx := context.Background()\n\tnow := time.Date(2026, 9, 26, 10, 0, 0, 0, time.UTC)\n\ts := schedulerStore(t)\n\tcreated := scheduleAt(t, s, now, nil)\n\tclock := \u0026fakeClock{now: now}\n\tgithub := \u0026fakeGitHub{}\n\tplanner := New(s, github)\n\tplanner.Clock = clock\n\tif err := planner.RunOnce(ctx); err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif github.calls.Load() != 1 {\n\t\tt.Fatalf(\"GitHub calls = %d\", github.calls.Load())\n\t}\n\tafter, err := s.GetSchedule(ctx, created.ID)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\twantNext := now.Add(time.Minute)\n\tif after.NextRunAt == nil || !after.NextRunAt.Equal(wantNext) || after.RunCount != 1 || after.SnapshotCount != 1 {\n\t\tt.Fatalf(\"schedule after run = %+v\", after)\n\t}\n\tclock.Set(now.Add(30 * time.Second))\n\tif err := planner.RunOnce(ctx); err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif github.calls.Load() != 1 {\n\t\tt.Fatalf(\"early execution made %d calls\", github.calls.Load())\n\t}\n}"
+            }
+          ]
+        },
+        "citations": [
+          {
+            "id": "[S1]",
+            "source": "day-18/README.md",
+            "section": "Day 18 — Unified persistent MCP agent \u003e Надёжность",
+            "chunk_id": "structural-48f25c926c4b8f19033a5f25"
+          }
+        ],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 11114,
+          "prompt_tokens": 3579,
+          "completion_tokens": 334,
+          "attempts": 2,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "plain_concepts": {
+        "matched": 1,
+        "total": 3,
+        "coverage": 0.3333333333333333,
+        "all": false,
+        "missing": [
+          "транзакционный claim",
+          "уникальность scheduled run"
+        ]
+      },
+      "rag_concepts": {
+        "matched": 2,
+        "total": 3,
+        "coverage": 0.6666666666666666,
+        "all": false,
+        "missing": [
+          "уникальность scheduled run"
+        ]
+      },
+      "top_k_source_recall": 0.3333333333333333,
+      "cited_source_recall": 0.3333333333333333
+    },
+    {
+      "id": "q03-decimal-currency",
+      "question": "Почему валютные суммы не вычисляются через float64 и как реализована точная десятичная арифметика?",
+      "expected_answer": "float64 даёт двоичные ошибки округления. Decimal разбирает строку в целочисленный коэффициент и десятичный scale, выполняет операции целыми числами и форматирует результат без потери десятичных знаков.",
+      "required_concepts": [
+        {
+          "name": "ошибка float64",
+          "alternatives": [
+            "ошибки округления",
+            "двоичное представление",
+            "двоичную систему",
+            "погрешност",
+            "проблем с плавающей точкой",
+            "float64 неточ"
+          ]
+        },
+        {
+          "name": "целочисленное хранение",
+          "alternatives": [
+            "целочисленный коэффициент",
+            "целыми числами",
+            "int64"
+          ]
+        },
+        {
+          "name": "десятичный scale",
+          "alternatives": [
+            "scale",
+            "масштаб",
+            "число знаков после запятой"
+          ]
+        }
+      ],
+      "expected_sources": [
+        "day-18/internal/decimal/decimal.go",
+        "day-18/README.md"
+      ],
+      "plain": {
+        "mode": "plain",
+        "question": "Почему валютные суммы не вычисляются через float64 и как реализована точная десятичная арифметика?",
+        "answer": "Валютные суммы обычно вычисляются с использованием специализированных типов данных, таких как `decimal.Decimal` в Python, который обеспечивает точную десятичную арифметику, необходимую для работы с валютами. Это избегает проблем с плавающей точкой, такими как дробные части, которые могут приводить к округлению и ошибкам. Валютные суммы часто имеют ограничение количества знаков после запятой, что делает использование `float64` неэффективным.",
+        "model": "qwen2.5:3b",
+        "citations": [],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 2951,
+          "prompt_tokens": 144,
+          "completion_tokens": 131,
+          "attempts": 1,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "rag": {
+        "mode": "rag",
+        "question": "Почему валютные суммы не вычисляются через float64 и как реализована точная десятичная арифметика?",
+        "answer": "Валютные суммы не вычисляются через float64, так как float64 использует двоичную систему счисления, что может приводить к погрешностям при работе с десятичными значениями. Вместо этого в коде используется точная десятичная арифметика, реализованная в библиотеке [S2].",
+        "model": "qwen2.5:3b",
+        "index": "../day-21/artifacts/index-structural.json",
+        "retrieval": {
+          "top_k": 5,
+          "duration_ms": 84,
+          "chunks": [
+            {
+              "rank": 1,
+              "score": 0.5542196951557264,
+              "chunk_id": "structural-3e989fc26e10f4c2dbf1de46",
+              "source": "day-18/internal/decimal/decimal_test.go",
+              "section": "func TestExactDecimalArithmetic",
+              "text": "func TestExactDecimalArithmetic(t *testing.T) {\n\tfor input, want := range map[string]string{\n\t\t\"001.2300\": \"1.23\", \"1e-3\": \"0.001\", \"1.25E2\": \"125\", \"-0.000\": \"0\",\n\t} {\n\t\tgot, err := Parse(input)\n\t\tif err != nil || got.String() != want {\n\t\t\tt.Fatalf(\"Parse(%q) = %q, %v; want %q\", input, got.String(), err, want)\n\t\t}\n\t}\n\tamount := MustParse(\"100\")\n\trate := MustParse(\"0.923456789123456789\")\n\tif got := amount.Mul(rate).String(); got != \"92.3456789123456789\" {\n\t\tt.Fatalf(\"conversion = %s\", got)\n\t}\n\tchange, err := PercentChange(MustParse(\"0.8\"), MustParse(\"1\"), 12)\n\tif err != nil || change.String() != \"25\" {\n\t\tt.Fatalf(\"percentage = %s, %v\", change.String(), err)\n\t}\n}"
+            },
+            {
+              "rank": 2,
+              "score": 0.5380361006443646,
+              "chunk_id": "structural-6089ea73371c5178d1ca663e",
+              "source": "day-18/internal/decimal/decimal.go",
+              "section": "package decimal",
+              "text": "// Package decimal implements the small, exact base-10 arithmetic surface the\n// application needs. It deliberately avoids binary floating-point values.\npackage decimal\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"math/big\"\n\t\"regexp\"\n\t\"strings\"\n)"
+            },
+            {
+              "rank": 3,
+              "score": 0.5247100273237872,
+              "chunk_id": "structural-0cd0c4d97ddd44fd54b9c54a",
+              "source": "day-18/internal/decimal/decimal_test.go",
+              "section": "package decimal",
+              "text": "package decimal\n\nimport \"testing\""
+            },
+            {
+              "rank": 4,
+              "score": 0.4892275468202914,
+              "chunk_id": "structural-088ddcce9fe0e3e95f187bb5",
+              "source": "day-18/internal/mcpcurrency/server_test.go",
+              "section": "func TestUnsupportedCurrencyIsStructured",
+              "text": "func TestUnsupportedCurrencyIsStructured(t *testing.T) {\n\tstorage, err := store.Open(context.Background(), filepath.Join(t.TempDir(), \"mcp.db\"))\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tdefer storage.Close()\n\tserver := NewServer(storage, fakeRateService{validateErr: fmtUnsupported()})\n\tserverTransport, clientTransport := mcp.NewInMemoryTransports()\n\tserverSession, err := server.Connect(context.Background(), serverTransport, nil)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tdefer serverSession.Close()\n\tclient := mcp.NewClient(\u0026mcp.Implementation{Name: \"unsupported-test\", Version: \"1\"}, nil)\n\tclientSession, err := client.Connect(context.Background(), clientTransport, nil)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tdefer clientSession.Close()\n\tsession := \u0026remoteSession{session: clientSession}\n\tresult, err := session.CallTool(context.Background(), ScheduleToolName, map[string]any{\"base_currency\": \"USD\", \"quote_currency\": \"XXX\", \"interval_seconds\": 60})\n\tif err != nil || !result.IsError {\n\t\tt.Fatalf(\"result=%+v %v\", result, err)\n\t}\n\tvar output ScheduleOutput\n\tdecode(t, result.Structured, \u0026output)\n\tif output.Error == nil || output.Error.Code != \"unsupported_currency\" {\n\t\tt.Fatalf(\"output=%+v\", output)\n\t}\n}"
+            },
+            {
+              "rank": 5,
+              "score": 0.478054557180708,
+              "chunk_id": "structural-8b93e2f535b73a8eabc9e899",
+              "source": "day-18/internal/mcpcurrency/server.go",
+              "section": "func RegisterTools",
+              "text": "CancelOutput{OK: true, ScheduleID: value.ID, Status: value.Status, AlreadyCancelled: already, SnapshotCount: value.SnapshotCount, Message: message}, nil\n\t})\n\tmcp.AddTool(server, \u0026mcp.Tool{Name: ConvertToolName, Title: \"Convert currency amount\", Description: \"Fetch the latest Frankfurter reference rate for a currency pair and multiply an exact decimal amount without binary floating point. Use for one-off questions such as how much 100 USD is in EUR; this does not create a monitor.\", InputSchema: convertInputSchema(), OutputSchema: convertOutputSchema(), Annotations: \u0026mcp.ToolAnnotations{ReadOnlyHint: true, IdempotentHint: true, OpenWorldHint: \u0026openWorld}}, func(ctx context.Context, _ *mcp.CallToolRequest, input ConvertInput) (*mcp.CallToolResult, ConvertOutput, error) {\n\t\tbase, quote, err := validatePair(input.BaseCurrency, input.QuoteCurrency)\n\t\tif err != nil {\n\t\t\treturn toolFailure(), ConvertOutput{Error: errorDetail(\"invalid_argument\", err)}, nil\n\t\t}\n\t\tamount, err := decimal.Parse(input.Amount)\n\t\tif err != nil || amount.Sign() \u003c 0 {\n\t\t\treturn toolFailure(), ConvertOutput{Error: errorDetail(\"invalid_argument\", errors.New(\"amount must be a non-negative decimal with at most 30 integer and 18 fractional digits\"))}, nil\n\t\t}\n\t\trate, err := rates.GetRate(ctx, base, quote)\n\t\tif err != nil {\n\t\t\treturn toolFailure(), ConvertOutput{Error: apiError(err)}, nil\n\t\t}\n\t\trateValue, err := decimal.Parse(rate.Value)\n\t\tif err != nil {\n\t\t\treturn toolFailure(), ConvertOutput{Error: errorDetail(\"upstream_error\", err)}, nil\n\t\t}\n\t\tfetched := rate.Fetched\n\t\treturn nil, ConvertOutput{OK: true, Amount: amount.String(), BaseCurrency: base, QuoteCurrency: quote, Rate: rate.Value, ConvertedAmount: amount.Mul(rateValue).String(), RateDate: rate.Date, FetchedAt: \u0026fetched, Source: rate.Source}, nil\n\t})\n}"
+            }
+          ]
+        },
+        "citations": [
+          {
+            "id": "[S2]",
+            "source": "day-18/internal/decimal/decimal.go",
+            "section": "package decimal",
+            "chunk_id": "structural-6089ea73371c5178d1ca663e"
+          }
+        ],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 5126,
+          "prompt_tokens": 1718,
+          "completion_tokens": 91,
+          "attempts": 1,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "plain_concepts": {
+        "matched": 1,
+        "total": 3,
+        "coverage": 0.3333333333333333,
+        "all": false,
+        "missing": [
+          "целочисленное хранение",
+          "десятичный scale"
+        ]
+      },
+      "rag_concepts": {
+        "matched": 1,
+        "total": 3,
+        "coverage": 0.3333333333333333,
+        "all": false,
+        "missing": [
+          "целочисленное хранение",
+          "десятичный scale"
+        ]
+      },
+      "top_k_source_recall": 0.5,
+      "cited_source_recall": 0.5
+    },
+    {
+      "id": "q04-github-http-safety",
+      "question": "Какие ограничения и проверки применяются при запросе метаданных публичного репозитория GitHub?",
+      "expected_answer": "Входные owner/repository валидируются, запрос имеет timeout и обязательные GitHub headers, тело ограничено по размеру. Клиент проверяет HTTP-коды и rate-limit headers, обязательные поля JSON и отклоняет private-репозитории.",
+      "required_concepts": [
+        {
+          "name": "валидация owner/repository",
+          "alternatives": [
+            "owner и repository",
+            "валидац",
+            "проверяются имена"
+          ]
+        },
+        {
+          "name": "лимиты HTTP",
+          "alternatives": [
+            "timeout",
+            "таймаут",
+            "ограничение размера"
+          ]
+        },
+        {
+          "name": "rate limit",
+          "alternatives": [
+            "rate limit",
+            "rate-limit",
+            "x-ratelimit-remaining"
+          ]
+        },
+        {
+          "name": "запрет private",
+          "alternatives": [
+            "private",
+            "приватн"
+          ]
+        }
+      ],
+      "expected_sources": [
+        "day-17/internal/githubapi/client.go",
+        "day-17/README.md",
+        "day-18/internal/githubapi/client.go"
+      ],
+      "plain": {
+        "mode": "plain",
+        "question": "Какие ограничения и проверки применяются при запросе метаданных публичного репозитория GitHub?",
+        "answer": "При запросе метаданных публичного репозитория GitHub применяются ограничения и проверки, включая проверку авторизации через токен OAuth или API ключа для доступа к репозиториям, которые требуют авторизации. Также могут быть ограничения по количеству запросов в минуту для защиты от несанкционированного использования.",
+        "model": "qwen2.5:3b",
+        "citations": [],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 1965,
+          "prompt_tokens": 139,
+          "completion_tokens": 89,
+          "attempts": 1,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "rag": {
+        "mode": "rag",
+        "question": "Какие ограничения и проверки применяются при запросе метаданных публичного репозитория GitHub?",
+        "answer": "Ограничения и проверки, применяемые при запросе метаданных публичного репозитория GitHub, включают:\n\n- Без токена основной лимит GitHub — 60 запросов в час на IP; обычный пользовательский токен обычно даёт 5000 запросов в час. [S4]\n- Возможны secondary rate limits. [S4]\n- Stars, forks, issues и timestamps изменяются со временем. [S4]\n- История чата не сохраняется между процессами. [S4]\n- MCP endpoint не имеет публичной аутентификации и поэтому доступен только с loopback/внутренней Docker-сети или через SSH-туннель. [S4]\n\nДля запроса метаданных используется следующий запрос:\n\n```text\nGET https://api.github.com/repos/{owner}/{repository}\n```\n\nКлиент отправляет:\n\n```text\nAccept: application/vnd.github+json\nX-GitHub-Api-Version: 2026-03-10\nUser-Agent: ai-challenge-day17/1.0\nAuthorization: Bearer ...  # только если задан GITHUB_TOKEN\n```\n\nПубличные репозитории доступны без токена. Опциональный `GITHUB_TOKEN` нужен только для увеличения rate limit и должен иметь минимальные права. Клиент намеренно отклоняет приватные репозитории даже при наличии токена. [S1]",
+        "model": "qwen2.5:3b",
+        "index": "../day-21/artifacts/index-structural.json",
+        "retrieval": {
+          "top_k": 5,
+          "duration_ms": 64,
+          "chunks": [
+            {
+              "rank": 1,
+              "score": 0.6264312390523683,
+              "chunk_id": "structural-2797cfa895d89b6334b86cca",
+              "source": "day-17/README.md",
+              "section": "Day 17 — GitHub MCP Agent \u003e GitHub REST API",
+              "text": "## GitHub REST API\n\nEndpoint:\n\n```text\nGET https://api.github.com/repos/{owner}/{repository}\n```\n\nКлиент отправляет:\n\n```text\nAccept: application/vnd.github+json\nX-GitHub-Api-Version: 2026-03-10\nUser-Agent: ai-challenge-day17/1.0\nAuthorization: Bearer ...  # только если задан GITHUB_TOKEN\n```\n\nПубличные репозитории доступны без токена. Опциональный `GITHUB_TOKEN` нужен\nтолько для увеличения rate limit и должен иметь минимальные права. Клиент\nнамеренно отклоняет приватные репозитории даже при наличии токена.\n\nЗащита клиента:\n\n- собственный таймаут и cancellation через `context.Context`;\n- лимит ответа 2 MiB с явным обнаружением превышения;\n- раздельные ошибки 404 и rate limit;\n- обработка `403`/`429`, `X-RateLimit-Reset` и `Retry-After`;\n- проверка HTTP-кода, JSON, обязательных полей и rate-limit header;\n- нормализация nullable description, language, license, topics и pushed time."
+            },
+            {
+              "rank": 2,
+              "score": 0.5789097801173358,
+              "chunk_id": "structural-4d8c8f1362acd426edf96f6a",
+              "source": "day-17/README.md",
+              "section": "Day 17 — GitHub MCP Agent \u003e MCP-инструмент",
+              "text": "## MCP-инструмент\n\nИмя: `get_github_repository`.\n\n| Параметр | Тип | Обязательный | Ограничения |\n|---|---|---:|---|\n| `owner` | `string` | да | 1–39, латинские буквы, цифры и внутренний `-` |\n| `repository` | `string` | да | 1–100, латинские буквы, цифры, `.`, `_`, `-` |\n\nInput schema имеет `type: object`, описания параметров, `required` и\n`additionalProperties: false`. Tool помечен как read-only и idempotent.\n\nStructured result содержит:\n\n- `full_name`, `description`, `html_url`;\n- `language`, `default_branch`;\n- `stars`, `forks`, `open_issues`, `archived`;\n- `license`, `topics`;\n- `created_at`, `updated_at`, `pushed_at`;\n- `rate_limit_remaining`, `source`.\n\n`open_issues` — исходный `open_issues_count` GitHub; GitHub учитывает pull\nrequests как разновидность issues."
+            },
+            {
+              "rank": 3,
+              "score": 0.556228315769605,
+              "chunk_id": "structural-a1ce2305dc7ceeadb605b80a",
+              "source": "day-17/README.md",
+              "section": "Day 17 — GitHub MCP Agent \u003e Пример",
+              "text": "## Пример\n\nЕстественный запрос:\n\n```text\nРасскажи по-русски об актуальном состоянии репозитория\nmodelcontextprotocol/go-sdk: назначение, основной язык, ветка по умолчанию,\nзвёзды, форки, открытые issues, лицензия и даты последнего обновления.\n```\n\nTool call формирует модель, например:\n\n```json\n{\n  \"name\": \"get_github_repository\",\n  \"arguments\": {\n    \"owner\": \"modelcontextprotocol\",\n    \"repository\": \"go-sdk\"\n  }\n}\n```\n\nФрагмент structured result:\n\n```json\n{\n  \"full_name\": \"modelcontextprotocol/go-sdk\",\n  \"language\": \"Go\",\n  \"default_branch\": \"main\",\n  \"license\": \"Apache-2.0\",\n  \"source\": \"GitHub REST API\"\n}\n```"
+            },
+            {
+              "rank": 4,
+              "score": 0.5452163703342641,
+              "chunk_id": "structural-ddb51d6741369eb36dada8e7",
+              "source": "day-17/README.md",
+              "section": "Day 17 — GitHub MCP Agent \u003e Ограничения",
+              "text": "## Ограничения\n\n- Без токена основной лимит GitHub — 60 запросов в час на IP; обычный\n  пользовательский token обычно даёт 5000 запросов в час.\n- Возможны secondary rate limits; автоматические агрессивные retry не делаются.\n- Stars, forks, issues и timestamps изменяются со временем.\n- История чата не сохраняется между процессами: проект сфокусирован на полном\n  MCP tool-call цикле.\n- MCP endpoint не имеет публичной аутентификации и поэтому доступен только с\n  loopback/внутренней Docker-сети или через SSH-туннель."
+            },
+            {
+              "rank": 5,
+              "score": 0.5324464112369129,
+              "chunk_id": "structural-6a60fcf8927ad0e3d2b96cfe",
+              "source": "day-18/README.md",
+              "section": "Day 18 — Unified persistent MCP agent \u003e Ограничения",
+              "text": "## Ограничения\n\n- Минимальный интервал фонового мониторинга — 60 секунд.\n- Без GitHub token действует низкий публичный rate limit; `open_issues_count` включает pull requests.\n- Frankfurter — источник справочных дневных курсов, не intraday trading data.\n- MCP endpoint не имеет публичной аутентификации и должен оставаться на loopback, внутренней Docker-сети или за SSH-туннелем."
+            }
+          ]
+        },
+        "citations": [
+          {
+            "id": "[S4]",
+            "source": "day-17/README.md",
+            "section": "Day 17 — GitHub MCP Agent \u003e Ограничения",
+            "chunk_id": "structural-ddb51d6741369eb36dada8e7"
+          },
+          {
+            "id": "[S1]",
+            "source": "day-17/README.md",
+            "section": "Day 17 — GitHub MCP Agent \u003e GitHub REST API",
+            "chunk_id": "structural-2797cfa895d89b6334b86cca"
+          }
+        ],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 10743,
+          "prompt_tokens": 1651,
+          "completion_tokens": 348,
+          "attempts": 1,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "plain_concepts": {
+        "matched": 0,
+        "total": 4,
+        "coverage": 0,
+        "all": false,
+        "missing": [
+          "валидация owner/repository",
+          "лимиты HTTP",
+          "rate limit",
+          "запрет private"
+        ]
+      },
+      "rag_concepts": {
+        "matched": 2,
+        "total": 4,
+        "coverage": 0.5,
+        "all": false,
+        "missing": [
+          "валидация owner/repository",
+          "лимиты HTTP"
+        ]
+      },
+      "top_k_source_recall": 0.3333333333333333,
+      "cited_source_recall": 0.3333333333333333
+    },
+    {
+      "id": "q05-agent-tool-loop",
+      "question": "Как агент сохраняет tool_call_id и передаёт результат MCP-инструмента обратно модели в следующем раунде?",
+      "expected_answer": "После assistant-сообщения с tool_calls агент вызывает MCP, сериализует результат и добавляет role=tool с исходным tool_call_id в историю; затем отправляет всю историю в следующий sampling-вызов модели.",
+      "required_concepts": [
+        {
+          "name": "исходный tool_call_id",
+          "alternatives": [
+            "исходным tool_call_id",
+            "тот же tool_call_id",
+            "сохраняет tool_call_id"
+          ]
+        },
+        {
+          "name": "role=tool",
+          "alternatives": [
+            "role=tool",
+            "ролью tool",
+            "сообщение tool"
+          ]
+        },
+        {
+          "name": "следующий sampling",
+          "alternatives": [
+            "следующий sampling",
+            "следующем раунде",
+            "повторно вызывает модель"
+          ]
+        }
+      ],
+      "expected_sources": [
+        "day-17/internal/agent/agent.go",
+        "day-17/README.md",
+        "day-19/internal/agent/agent.go",
+        "day-20/internal/agent/agent.go"
+      ],
+      "plain": {
+        "mode": "plain",
+        "question": "Как агент сохраняет tool_call_id и передаёт результат MCP-инструмента обратно модели в следующем раунде?",
+        "answer": "Агент сохраняет tool_call_id для идентификации конкретного вызова инструмента. Результат MCP-инструмента передаётся обратно в модель в следующем раунде, обычно через механизм обратной связи или ответа на предыдущий запрос. Это может быть сделано через API, если используется автоматическая передача данных, или через интерфейс пользователя вручную, если это необходимо для визуализации или анализа результатов.",
+        "model": "qwen2.5:3b",
+        "citations": [],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 2512,
+          "prompt_tokens": 142,
+          "completion_tokens": 112,
+          "attempts": 1,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "rag": {
+        "mode": "rag",
+        "question": "Как агент сохраняет tool_call_id и передаёт результат MCP-инструмента обратно модели в следующем раунде?",
+        "answer": "Агент сохраняет tool_call_id и передаёт результат MCP-инструмента обратно модели в следующем раунде через следующие шаги:\n\n1. В тесте [S1] показано, как агент использует `tool_choice: auto` для выбора соответствующего MCP-инструмента (`get_github_repository` в данном случае). Tool_call_id сохраняется в истории сообщений (`toolMessage.ToolCallID != \"call-1\"`).\n\n2. В тесте [S2] описано, что агент добавляет результат выполнения MCP-инструмента в историю как `role=tool` с исходным `tool_call_id`. Это подтверждается строкой `second := llm.requests[1]` и `toolMessage.ToolCallID != \"call-1\"`.\n\n3. В тесте [S3] показано, как агент использует `tool_choice: auto` для выбора соответствующего MCP-инструмента (`ScheduleToolName` и `SummaryToolName` в данном случае). Tool_call_id сохраняется в истории сообщений (`firstToolResult.ToolCallID != \"call-create\"` и `secondToolResult.ToolCallID != \"call-summary\"`).\n\n4. В тесте [S4] описано, что MCP-инструменты возвращают структурированные результаты и idempotent-ный механизм для отмены. Tool_call_id сохраняется в истории сообщений (`firstToolResult.Role != \"tool\"` и `secondToolResult.Role != \"tool\"`).\n\n5. В тесте [S5] описано, что история диалога хранится в памяти `agent-app` и содержит предыдущие сообщения, MCP tool calls и результаты. Tool_call_id сохраняется в истории сообщений (`toolMessage.ToolCallID != \"call-1\"`).\n\nТаким образом, агент сохраняет tool_call_id и передаёт результат MCP-инструмента обратно модели в следующем раунде, используя `tool_choice: auto` для выбора соответствующего MCP-инструмента и сохраняя Tool_call_id в истории сообщений.",
+        "model": "qwen2.5:3b",
+        "index": "../day-21/artifacts/index-structural.json",
+        "retrieval": {
+          "top_k": 5,
+          "duration_ms": 80,
+          "chunks": [
+            {
+              "rank": 1,
+              "score": 0.675013263840894,
+              "chunk_id": "structural-26505143760f1ebc08dc4c85",
+              "source": "day-17/internal/agent/agent_test.go",
+              "section": "func TestAgentToolCallLoopReturnsModelAnswerBasedOnMCPResult",
+              "text": "func TestAgentToolCallLoopReturnsModelAnswerBasedOnMCPResult(t *testing.T) {\n\tllm := \u0026fakeLLM{responses: []ChatResponse{\n\t\t{Choices: []Choice{{FinishReason: \"tool_calls\", Message: Message{ToolCalls: []ToolCall{{\n\t\t\tID: \"call-1\", Type: \"function\", Function: ToolCallFunction{Name: \"get_github_repository\", Arguments: `{\"owner\":\"modelcontextprotocol\",\"repository\":\"go-sdk\"}`},\n\t\t}}}}}},\n\t\t{Choices: []Choice{{FinishReason: \"stop\", Message: Message{Content: \"modelcontextprotocol/go-sdk написан на Go и имеет 5153 звезды.\"}}}},\n\t}}\n\tsession := \u0026fakeSession{}\n\tchatAgent := New(Config{Model: \"fake-model\"}, llm, fakeConnector{session: session})\n\n\tresult, err := chatAgent.Ask(context.Background(), \"Расскажи об актуальном состоянии репозитория modelcontextprotocol/go-sdk\")\n\tif err != nil {\n\t\tt.Fatalf(\"Ask() error = %v\", err)\n\t}\n\tif session.name != \"get_github_repository\" || session.arguments[\"owner\"] != \"modelcontextprotocol\" || session.arguments[\"repository\"] != \"go-sdk\" {\n\t\tt.Fatalf(\"tool call = %q %#v\", session.name, session.arguments)\n\t}\n\tif len(llm.requests) != 2 {\n\t\tt.Fatalf(\"LLM request count = %d\", len(llm.requests))\n\t}\n\tsecond := llm.requests[1]\n\ttoolMessage := second.Messages[len(second.Messages)-1]\n\tif len(second.Messages) \u003c 4 || toolMessage.Role != \"tool\" || toolMessage.ToolCallID != \"call-1\" || !strings.Contains(toolMessage.Content, \"5153\") || !strings.Contains(toolMessage.Content, \"GitHub REST API\") {\n\t\tt.Fatalf(\"tool result was not sent to model: %+v\", second.Messages)\n\t}\n\tif llm.requests[0].ToolChoice != \"auto\" || len(llm.requests[0].Tools) != 1 || llm.requests[0].Tools[0].Function.Name != \"get_github_repository\" {\n\t\tt.Fatalf(\"first model request does not contain MCP tool with auto choice: %+v\", llm.requests[0])\n\t}\n\tif !strings.Contains(result.Content, \"5153\") {\n\t\tt.Fatalf(\"final answer does not use tool result: %q\", result.Content)\n\t}\n\tif len(result.Trace) != 4 || result.Trace[1].Stage != \"model/tool_call\" || result.Trace[2].Stage != \"mcp/tools/call\" {\n\t\tt.Fatalf(\"unexpected trace: %+v\", result.Trace)\n\t}\n\tif result.Trace[0].Result == nil {\n\t\tt.Fatal(\"tools/list trace does not include schemas\")\n\t}\n}"
+            },
+            {
+              "rank": 2,
+              "score": 0.6738205864691967,
+              "chunk_id": "structural-07ca3e8180ef5ea440236ae8",
+              "source": "day-17/README.md",
+              "section": "Day 17 — GitHub MCP Agent \u003e Результат",
+              "text": "## Результат\n\nПолный цикл выглядит так:\n\n1. агент подключается к MCP по Streamable HTTP;\n2. `tools/list` возвращает `get_github_repository` и JSON Schema;\n3. схема без изменений передаётся DeepSeek как function tool;\n4. запрос к модели использует `tool_choice: auto`;\n5. модель формирует `owner` и `repository`;\n6. агент выполняет MCP `tools/call`;\n7. MCP-сервер вызывает `GET /repos/{owner}/{repository}`;\n8. GitHub metadata возвращается как `structuredContent`;\n9. агент добавляет результат в историю как `role=tool` с исходным\n   `tool_call_id`;\n10. следующий sampling-вызов формирует финальный ответ.\n\nВ коде нет поиска ключевых слов, регулярных выражений для определения намерения,\nпринудительного tool call или прямого обращения агента к GitHub в обход MCP.\n\nФактическая трассировка: [artifacts/local-real-model-smoke.json](artifacts/local-real-model-smoke.json).\nУдалённая трассировка: [artifacts/remote-real-model-smoke.json](artifacts/remote-real-model-smoke.json).\nПроверка контейнеров: [artifacts/local-container-verification.txt](artifacts/local-container-verification.txt)."
+            },
+            {
+              "rank": 3,
+              "score": 0.602320270582782,
+              "chunk_id": "structural-6101e521b70ada5f1ff3ac9b",
+              "source": "day-18/internal/agent/agent_test.go",
+              "section": "func TestAgentSupportsSequentialModelSelectedMCPCalls",
+              "text": "func TestAgentSupportsSequentialModelSelectedMCPCalls(t *testing.T) {\n\tllm := \u0026fakeLLM{responses: []ChatResponse{\n\t\t{Choices: []Choice{{FinishReason: \"tool_calls\", Message: Message{ToolCalls: []ToolCall{{\n\t\t\tID: \"call-create\", Type: \"function\", Function: ToolCallFunction{Name: mcpgithub.ScheduleToolName, Arguments: `{\"owner\":\"modelcontextprotocol\",\"repository\":\"go-sdk\",\"interval_seconds\":60,\"max_runs\":2}`},\n\t\t}}}}}},\n\t\t{Choices: []Choice{{FinishReason: \"tool_calls\", Message: Message{ToolCalls: []ToolCall{{\n\t\t\tID: \"call-summary\", Type: \"function\", Function: ToolCallFunction{Name: mcpgithub.SummaryToolName, Arguments: `{\"schedule_id\":\"mon_0123456789abcdef0123456789abcdef\"}`},\n\t\t}}}}}},\n\t\t{Choices: []Choice{{FinishReason: \"stop\", Message: Message{Content: \"Мониторинг создан; два снимка сохранены, звёзды выросли на одну.\"}}}},\n\t}}\n\tsession := \u0026fakeSession{}\n\tchatAgent := New(Config{Model: \"fake-model\"}, llm, fakeConnector{session: session})\n\n\tresult, err := chatAgent.Ask(context.Background(), \"Создай мониторинг, затем покажи его сводку\")\n\tif err != nil {\n\t\tt.Fatalf(\"Ask() error = %v\", err)\n\t}\n\tif len(session.calls) != 2 || session.calls[0].name != mcpgithub.ScheduleToolName || session.calls[1].name != mcpgithub.SummaryToolName {\n\t\tt.Fatalf(\"tool calls = %+v\", session.calls)\n\t}\n\tif session.calls[0].arguments[\"owner\"] != \"modelcontextprotocol\" || session.calls[0].arguments[\"interval_seconds\"].(jsonNumber).String() != \"60\" {\n\t\tt.Fatalf(\"create arguments = %#v\", session.calls[0].arguments)\n\t}\n\tif len(llm.requests) != 3 || llm.requests[0].ToolChoice != \"auto\" || len(llm.requests[0].Tools) != 2 {\n\t\tt.Fatalf(\"LLM requests = %+v\", llm.requests)\n\t}\n\tfirstToolResult := llm.requests[1].Messages[len(llm.requests[1].Messages)-1]\n\tsecondToolResult := llm.requests[2].Messages[len(llm.requests[2].Messages)-1]\n\tif firstToolResult.Role != \"tool\" || firstToolResult.ToolCallID != \"call-create\" || !strings.Contains(firstToolResult.Content, \"schedule_id\") {\n\t\tt.Fatalf(\"first tool message = %+v\", firstToolResult)\n\t}\n\tif secondToolResult.Role != \"tool\" || secondToolResult.ToolCallID != \"call-summary\" || !strings.Contains(secondToolResult.Content, \"5153\") {\n\t\tt.Fatalf(\"second tool message = %+v\", secondToolResult)\n\t}\n\tif result.Content == \"\" || len(result.Trace) != 6 || result.Trace[5].Stage != \"final\" {\n\t\tt.Fatalf(\"result = %+v\", result)\n\t}\n}"
+            },
+            {
+              "rank": 4,
+              "score": 0.5876292070078909,
+              "chunk_id": "structural-9b2395c62cb4d238c3b2fb6b",
+              "source": "day-18/internal/mcpgithub/server_test.go",
+              "section": "func TestMCPToolCallsReturnStructuredResultsAndIdempotentCancel",
+              "text": "func TestMCPToolCallsReturnStructuredResultsAndIdempotentCancel(t *testing.T) {\n\tsession, _ := testSession(t)\n\tcreated, err := session.CallTool(context.Background(), ScheduleToolName, map[string]any{\n\t\t\"owner\": \"modelcontextprotocol\", \"repository\": \"go-sdk\", \"interval_seconds\": 60, \"max_runs\": 2,\n\t})\n\tif err != nil || created.IsError || created.Structured == nil {\n\t\tt.Fatalf(\"schedule result = %+v, %v\", created, err)\n\t}\n\tvar schedule ScheduleOutput\n\tdecodeStructured(t, created.Structured, \u0026schedule)\n\tif !schedule.OK || schedule.ScheduleID == \"\" || schedule.Status != store.StatusActive || schedule.NextRunAt == nil {\n\t\tt.Fatalf(\"schedule = %+v\", schedule)\n\t}\n\n\tlisted, err := session.CallTool(context.Background(), ListToolName, map[string]any{\"status\": \"active\"})\n\tif err != nil || listed.IsError {\n\t\tt.Fatalf(\"list result = %+v, %v\", listed, err)\n\t}\n\tvar list ListOutput\n\tdecodeStructured(t, listed.Structured, \u0026list)\n\tif !list.OK || list.Count != 1 || list.Monitors[0].ID != schedule.ScheduleID {\n\t\tt.Fatalf(\"list = %+v\", list)\n\t}\n\n\tsummarized, err := session.CallTool(context.Background(), SummaryToolName, map[string]any{\"schedule_id\": schedule.ScheduleID})\n\tif err != nil || summarized.IsError {\n\t\tt.Fatalf(\"summary result = %+v, %v\", summarized, err)\n\t}\n\tvar summary SummaryOutput\n\tdecodeStructured(t, summarized.Structured, \u0026summary)\n\tif !summary.OK || summary.SnapshotCount != 0 || !summary.InsufficientData {\n\t\tt.Fatalf(\"summary = %+v\", summary)\n\t}\n\n\tfor i := range 2 {\n\t\tcancelled, err := session.CallTool(context.Background(), CancelToolName, map[string]any{\"schedule_id\": schedule.ScheduleID})\n\t\tif err != nil || cancelled.IsError {\n\t\t\tt.Fatalf(\"cancel %d = %+v, %v\", i, cancelled, err)\n\t\t}\n\t\tvar output CancelOutput\n\t\tdecodeStructured(t, cancelled.Structured, \u0026output)\n\t\tif !output.OK || output.Status != store.StatusCancelled || output.AlreadyCancelled != (i == 1) {\n\t\t\tt.Fatalf(\"cancel %d = %+v\", i, output)\n\t\t}\n\t}\n}"
+            },
+            {
+              "rank": 5,
+              "score": 0.587296599656381,
+              "chunk_id": "structural-30be5c06a819a4ce27c31900",
+              "source": "day-18/README.md",
+              "section": "Day 18 — Unified persistent MCP agent \u003e История диалога",
+              "text": "## История диалога\n\nWeb-приложение выдаёт браузеру HttpOnly session cookie и хранит последние 12 полных ходов диалога. В следующий запрос модели передаются предыдущие сообщения вместе с MCP tool calls и результатами, поэтому фразы вроде «останови созданный монитор» работают без повторного ввода ID. Кнопка «Новый диалог» очищает только историю чата; расписания и снимки MCP при этом не удаляются. История чата хранится в памяти `agent-app` и сбрасывается при его перезапуске.\n\nКлючевые пакеты:\n\n- `internal/mcpmulti` — агрегация каталогов и маршрутизация tool calls по нескольким MCP;\n- `internal/mcpgithub`, `internal/store`, `internal/scheduler`, `internal/githubapi` — GitHub-домен;\n- `internal/mcpcurrency`, `internal/currencystore`, `internal/currencyscheduler`, `internal/frankfurter`, `internal/decimal` — валютный домен;\n- `internal/agent` — общий многошаговый tool-call loop;\n- `internal/web` — общая панель GitHub + валюты."
+            }
+          ]
+        },
+        "citations": [
+          {
+            "id": "[S1]",
+            "source": "day-17/internal/agent/agent_test.go",
+            "section": "func TestAgentToolCallLoopReturnsModelAnswerBasedOnMCPResult",
+            "chunk_id": "structural-26505143760f1ebc08dc4c85"
+          },
+          {
+            "id": "[S2]",
+            "source": "day-17/README.md",
+            "section": "Day 17 — GitHub MCP Agent \u003e Результат",
+            "chunk_id": "structural-07ca3e8180ef5ea440236ae8"
+          },
+          {
+            "id": "[S3]",
+            "source": "day-18/internal/agent/agent_test.go",
+            "section": "func TestAgentSupportsSequentialModelSelectedMCPCalls",
+            "chunk_id": "structural-6101e521b70ada5f1ff3ac9b"
+          },
+          {
+            "id": "[S4]",
+            "source": "day-18/internal/mcpgithub/server_test.go",
+            "section": "func TestMCPToolCallsReturnStructuredResultsAndIdempotentCancel",
+            "chunk_id": "structural-9b2395c62cb4d238c3b2fb6b"
+          },
+          {
+            "id": "[S5]",
+            "source": "day-18/README.md",
+            "section": "Day 18 — Unified persistent MCP agent \u003e История диалога",
+            "chunk_id": "structural-30be5c06a819a4ce27c31900"
+          }
+        ],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 18047,
+          "prompt_tokens": 3100,
+          "completion_tokens": 490,
+          "attempts": 1,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "plain_concepts": {
+        "matched": 2,
+        "total": 3,
+        "coverage": 0.6666666666666666,
+        "all": false,
+        "missing": [
+          "role=tool"
+        ]
+      },
+      "rag_concepts": {
+        "matched": 3,
+        "total": 3,
+        "coverage": 1,
+        "all": true,
+        "missing": []
+      },
+      "top_k_source_recall": 0.25,
+      "cited_source_recall": 0.25
+    },
+    {
+      "id": "q06-pipeline-integrity",
+      "question": "Как в композиции search summarize save_to_file проверяется целостность данных между этапами?",
+      "expected_answer": "Pipeline state разрешает фиксированный порядок. summarize обязан получить точные query/documents результата search, а save_to_file — точные query/summary/sources результата summarize; сохранённый Markdown сопровождается SHA-256.",
+      "required_concepts": [
+        {
+          "name": "фиксированный порядок",
+          "alternatives": [
+            "фиксированный порядок",
+            "search → summarize → save",
+            "порядок этапов"
+          ]
+        },
+        {
+          "name": "точные данные search",
+          "alternatives": [
+            "точные query и documents",
+            "точные документы",
+            "без изменений",
+            "точный результат search"
+          ]
+        },
+        {
+          "name": "точные данные summarize",
+          "alternatives": [
+            "точные query, summary и sources",
+            "точный результат summarize",
+            "summary и sources",
+            "`summary` и `sources`"
+          ]
+        },
+        {
+          "name": "SHA-256",
+          "alternatives": [
+            "sha-256",
+            "sha256",
+            "хеш"
+          ]
+        }
+      ],
+      "expected_sources": [
+        "day-19/README.md",
+        "day-19/internal/pipeline/server.go",
+        "day-19/internal/pipeline/summarize.go",
+        "day-19/internal/pipeline/save.go"
+      ],
+      "plain": {
+        "mode": "plain",
+        "question": "Как в композиции search summarize save_to_file проверяется целостность данных между этапами?",
+        "answer": "В композиции `search summarize save_to_file` целостность данных между этапами обычно проверяется путем валидации результатов предыдущего этапа перед началом следующего. Например, после выполнения этапа `search` данные проверяются на наличие ошибок или несоответствий, а затем передаются в этап `summarize` для обработки. Этап `save_to_file` обычно выполняется только после успешного завершения предыдущих этапов.",
+        "model": "qwen2.5:3b",
+        "citations": [],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 2657,
+          "prompt_tokens": 132,
+          "completion_tokens": 113,
+          "attempts": 1,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "rag": {
+        "mode": "rag",
+        "question": "Как в композиции search summarize save_to_file проверяется целостность данных между этапами?",
+        "answer": "В композиции search summarize save_to_file проверяется целостность данных между этапами через проверку целостности, описанную в тесте [S3]. Между вызовами инструментов выполняется проверка, что `summarize` принимает точные документы `search`, а `save_to_file` — точные `summary` и `sources` предыдущего шага.",
+        "model": "qwen2.5:3b",
+        "index": "../day-21/artifacts/index-structural.json",
+        "retrieval": {
+          "top_k": 5,
+          "duration_ms": 83,
+          "chunks": [
+            {
+              "rank": 1,
+              "score": 0.6992418453787099,
+              "chunk_id": "structural-5f7fe11f5be896804b84c790",
+              "source": "day-19/internal/agent/agent.go",
+              "section": "const SystemPrompt",
+              "text": "const SystemPrompt = `Ты — агент исследовательского пайплайна. Для любого запроса найти информацию, подготовить краткую сводку и сохранить её ты обязан самостоятельно выбрать MCP tools через tool_choice=auto и вызвать ровно три отдельных инструмента строго последовательно: search → summarize → save_to_file. Никогда не пропускай этапы и не имитируй их текстом. Обычно запрашивай 3 документа в search; используй до 5 только если это явно полезно пользователю. Передай query и полный массив documents из результата search в summarize без потери, изменения или выдумывания данных. У каждого document разрешены только поля title, url и text: никогда не добавляй url_note, description, source или другие поля. Затем передай query, summary и sources из результата summarize в save_to_file без изменения; у каждого source разрешены только title и url. Используй имя .md из запроса пользователя либо безопасное описательное имя. После успешного сохранения сообщи абсолютный путь, SHA-256 и использованные источники. Основывай финальный ответ только на результатах MCP.`"
+            },
+            {
+              "rank": 2,
+              "score": 0.6491930866701258,
+              "chunk_id": "structural-c564e4de307961349698ccad",
+              "source": "day-19/README.md",
+              "section": "Day 19 — композиция MCP-инструментов",
+              "text": "# Day 19 — композиция MCP-инструментов\n\nСамостоятельный Go-проект с тремя отдельными MCP-инструментами:\n\n```text\nsearch → summarize → save_to_file\n```\n\nПорядок выбирает и выполняет DeepSeek в настоящем `tool_choice: auto` цикле. HTTP-handler web-приложения только передаёт естественный запрос агенту; он не вызывает этапы вручную. Между вызовами действует проверка целостности: `summarize` принимает точные документы `search`, а `save_to_file` — точные `summary` и `sources` предыдущего шага."
+            },
+            {
+              "rank": 3,
+              "score": 0.6261873206436537,
+              "chunk_id": "structural-03750b2b2e5d6072cb8352ba",
+              "source": "day-19/internal/agent/agent_test.go",
+              "section": "func TestAgentModelSelectedPipelineAndExactTransfer",
+              "text": "func TestAgentModelSelectedPipelineAndExactTransfer(t *testing.T) {\n\ta, llm, dir := testPipeline(t, false)\n\tresult, err := a.Ask(context.Background(), \"Найди MCP, сделай сводку и сохрани.\")\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif llm.step != 4 || result.Content == \"\" {\n\t\tt.Fatalf(\"incomplete loop: step=%d response=%+v\", llm.step, result)\n\t}\n\tvar order, ids []string\n\tfor _, event := range result.Trace {\n\t\tif event.Stage == \"model/tool_call\" {\n\t\t\torder = append(order, event.Tool)\n\t\t\tids = append(ids, event.ToolCallID)\n\t\t}\n\t}\n\tif !reflect.DeepEqual(order, []string{pipeline.SearchToolName, pipeline.SummarizeToolName, pipeline.SaveToolName}) {\n\t\tt.Fatalf(\"order=%v\", order)\n\t}\n\tif !reflect.DeepEqual(ids, []string{\"call-search\", \"call-summary\", \"call-save\"}) {\n\t\tt.Fatalf(\"ids=%v\", ids)\n\t}\n\tpath := filepath.Join(dir, \"mcp-summary.md\")\n\tdata, err := os.ReadFile(path)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\thash := fmt.Sprintf(\"%x\", sha256.Sum256(data))\n\tvar saved pipeline.SaveOutput\n\tfor _, event := range result.Trace {\n\t\tif event.Stage == \"mcp/tools/call\" \u0026\u0026 event.Tool == pipeline.SaveToolName {\n\t\t\tencoded, _ := json.Marshal(event.Result)\n\t\t\tif err := json.Unmarshal(encoded, \u0026saved); err != nil {\n\t\t\t\tt.Fatal(err)\n\t\t\t}\n\t\t}\n\t}\n\tif saved.SHA256 != hash || saved.Path != path {\n\t\tt.Fatalf(\"saved=%+v hash=%s\", saved, hash)\n\t}\n\t// The summary result and save arguments must be byte-for-byte equal.\n\tvar summary string\n\tvar saveContent string\n\tfor _, event := range result.Trace {\n\t\tif event.Stage == \"mcp/tools/call\" \u0026\u0026 event.Tool == pipeline.SummarizeToolName {\n\t\t\tencoded, _ := json.Marshal(event.Result)\n\t\t\tvar out pipeline.SummarizeOutput\n\t\t\t_ = json.Unmarshal(encoded, \u0026out)\n\t\t\tsummary = out.Summary\n\t\t}\n\t\tif event.Stage == \"model/tool_call\" \u0026\u0026 event.Tool == pipeline.SaveToolName {\n\t\t\tsaveContent, _ = event.Arguments[\"content\"].(string)\n\t\t}\n\t}\n\tif summary == \"\" || saveContent != summary {\n\t\tt.Fatalf(\"summary transfer changed: %q != %q\", saveContent, summary)\n\t}\n}"
+            },
+            {
+              "rank": 4,
+              "score": 0.6246902659809656,
+              "chunk_id": "structural-a1c41d127c3b4acf1b4b57c9",
+              "source": "day-20/internal/knowledge/server.go",
+              "section": "const SummarizeTool",
+              "text": "const SummarizeTool = \"knowledge_summarize\""
+            },
+            {
+              "rank": 5,
+              "score": 0.6149074218219144,
+              "chunk_id": "structural-989f15f2eee2d4b7459f88a9",
+              "source": "day-19/internal/pipeline/summarize.go",
+              "section": "func Summarize",
+              "text": "func Summarize(input SummarizeInput) (SummarizeOutput, error) {\n\tinput.Query = cleanSpace(input.Query)\n\tif input.Query == \"\" || len([]rune(input.Query)) \u003e 300 {\n\t\treturn SummarizeOutput{}, errors.New(\"query must contain 1 to 300 characters\")\n\t}\n\tif input.MaxSentences \u003c 1 || input.MaxSentences \u003e 10 {\n\t\treturn SummarizeOutput{}, errors.New(\"max_sentences must be between 1 and 10\")\n\t}\n\tif len(input.Documents) \u003e 5 {\n\t\treturn SummarizeOutput{}, errors.New(\"documents must contain at most 5 items\")\n\t}\n\tterms := meaningfulWords(input.Query)\n\tseen := map[string]bool{}\n\tall := make([]rankedSentence, 0)\n\tsources := make([]Source, 0, len(input.Documents))\n\tseenSources := map[string]bool{}\n\torder := 0\n\tfor _, document := range input.Documents {\n\t\tdocument.Title, document.URL, document.Text = cleanSpace(document.Title), strings.TrimSpace(document.URL), cleanSpace(document.Text)\n\t\tif document.URL != \"\" \u0026\u0026 !seenSources[document.URL] {\n\t\t\tsources = append(sources, Source{Title: document.Title, URL: document.URL})\n\t\t\tseenSources[document.URL] = true\n\t\t}\n\t\tfor _, match := range sentenceBoundary.FindAllString(document.Text, -1) {\n\t\t\tsentence := cleanSpace(match)\n\t\t\tkey := strings.ToLower(strings.Trim(sentence, \" .!?…\"))\n\t\t\tif key == \"\" || seen[key] {\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tseen[key] = true\n\t\t\twords := meaningfulWords(sentence)\n\t\t\tscore := len(words)\n\t\t\tfor term := range terms {\n\t\t\t\tif words[term] {\n\t\t\t\t\tscore += 12\n\t\t\t\t}\n\t\t\t}\n\t\t\tif len([]rune(sentence)) \u003e= 45 \u0026\u0026 len([]rune(sentence)) \u003c= 260 {\n\t\t\t\tscore += 4\n\t\t\t}\n\t\t\tall = append(all, rankedSentence{text: sentence, order: order, score: score})\n\t\t\torder++\n\t\t}\n\t}\n\twarning := \"\"\n\tif len(all) == 0 {\n\t\twarning = \"Недостаточно данных для составления сводки.\"\n\t\treturn SummarizeOutput{OK: true, Query: input.Query, Sources: sources, InputDocuments: len(input.Documents), Warning: warning}, nil\n\t}\n\tranked := append([]rankedSentence(nil), all...)\n\tsort.SliceStable(ranked, func(i, j int) bool {\n\t\tif ranked[i].score == ranked[j].score {\n\t\t\treturn ranked[i].order \u003c ranked[j].order\n\t\t}\n\t\treturn ranked[i].score \u003e ranked[j].score\n\t})\n\tcount := input.MaxSentences\n\tif len(ranked) \u003c count {\n\t\tcount = len(ranked)\n\t\twarning = \"Доступно меньше информативных предложений, чем запрошено.\"\n\t}\n\tchosen := append([]rankedSentence(nil), ranked[:count]...)\n\tsort.Slice(chosen, func(i, j int) bool { return chosen[i].order \u003c chosen[j].order })\n\tparts := make([]string, len(chosen))\n\tfor i := range chosen {\n\t\tparts[i] = chosen[i].text\n\t}\n\treturn SummarizeOutput{OK: true, Query: input.Query, Summary: strings.Join(parts, \" \"), Sources: sources, InputDocuments: len(input.Documents), SentenceCount: len(chosen), Warning: warning}, nil\n}"
+            }
+          ]
+        },
+        "citations": [
+          {
+            "id": "[S3]",
+            "source": "day-19/internal/agent/agent_test.go",
+            "section": "func TestAgentModelSelectedPipelineAndExactTransfer",
+            "chunk_id": "structural-03750b2b2e5d6072cb8352ba"
+          }
+        ],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 6444,
+          "prompt_tokens": 2386,
+          "completion_tokens": 91,
+          "attempts": 1,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "plain_concepts": {
+        "matched": 0,
+        "total": 4,
+        "coverage": 0,
+        "all": false,
+        "missing": [
+          "фиксированный порядок",
+          "точные данные search",
+          "точные данные summarize",
+          "SHA-256"
+        ]
+      },
+      "rag_concepts": {
+        "matched": 2,
+        "total": 4,
+        "coverage": 0.5,
+        "all": false,
+        "missing": [
+          "фиксированный порядок",
+          "SHA-256"
+        ]
+      },
+      "top_k_source_recall": 0.5,
+      "cited_source_recall": 0
+    },
+    {
+      "id": "q07-artifact-sandbox",
+      "question": "Как Artifact MCP безопасно сохраняет отчёты и предотвращает выход пути за разрешённый каталог?",
+      "expected_answer": "Store принимает только безопасное относительное имя .md, запрещает absolute path, .. и разделители, затем сравнивает вычисленный каталог с OutputDir. Запись идёт через временный файл, fsync и atomic rename с лимитом размера.",
+      "required_concepts": [
+        {
+          "name": "валидация имени",
+          "alternatives": [
+            "безопасное относительное",
+            "safe relative",
+            "регулярн"
+          ]
+        },
+        {
+          "name": "защита от traversal",
+          "alternatives": [
+            "..",
+            "path traversal",
+            "выход за каталог"
+          ]
+        },
+        {
+          "name": "atomic write",
+          "alternatives": [
+            "atomic rename",
+            "атомарн",
+            "временный файл"
+          ]
+        },
+        {
+          "name": "лимит размера",
+          "alternatives": [
+            "лимит размера",
+            "maxmarkdown",
+            "512"
+          ]
+        }
+      ],
+      "expected_sources": [
+        "day-20/internal/artifact/store.go",
+        "day-20/internal/artifact/server.go",
+        "day-20/README.md"
+      ],
+      "plain": {
+        "mode": "plain",
+        "question": "Как Artifact MCP безопасно сохраняет отчёты и предотвращает выход пути за разрешённый каталог?",
+        "answer": "Artifact MCP безопасно сохраняет отчёты и предотвращает выход пути за разрешённый каталог, используя механизмы безопасности и контроля доступа. Он настраивает права доступа к каталогам и файлам, чтобы предотвратить несанкционированный доступ. Также Artifact MCP может применять политики безопасности, такие как блокировка несанкционированных операций, для защиты данных.",
+        "model": "qwen2.5:3b",
+        "citations": [],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 2133,
+          "prompt_tokens": 136,
+          "completion_tokens": 95,
+          "attempts": 1,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "rag": {
+        "mode": "rag",
+        "question": "Как Artifact MCP безопасно сохраняет отчёты и предотвращает выход пути за разрешённый каталог?",
+        "answer": "Artifact MCP безопасно сохраняет отчёты и предотвращает выход пути за разрешённый каталог, используя константу SaveTool, которая указывает, куда сохранять файлы. В контексте [S1], мы видим, что SaveTool определен как \"artifact_save_to_file\". Это означает, что отчёты сохраняются в определённый каталог, который не должен выходить за пределы разрешённого.",
+        "model": "qwen2.5:3b",
+        "index": "../day-21/artifacts/index-structural.json",
+        "retrieval": {
+          "top_k": 5,
+          "duration_ms": 96,
+          "chunks": [
+            {
+              "rank": 1,
+              "score": 0.6129942637810242,
+              "chunk_id": "structural-70bc5348feb26b9eda1d62d0",
+              "source": "day-20/internal/artifact/server.go",
+              "section": "const SaveTool",
+              "text": "const SaveTool = \"artifact_save_to_file\""
+            },
+            {
+              "rank": 2,
+              "score": 0.5362946160089926,
+              "chunk_id": "structural-5f7fe11f5be896804b84c790",
+              "source": "day-19/internal/agent/agent.go",
+              "section": "const SystemPrompt",
+              "text": "const SystemPrompt = `Ты — агент исследовательского пайплайна. Для любого запроса найти информацию, подготовить краткую сводку и сохранить её ты обязан самостоятельно выбрать MCP tools через tool_choice=auto и вызвать ровно три отдельных инструмента строго последовательно: search → summarize → save_to_file. Никогда не пропускай этапы и не имитируй их текстом. Обычно запрашивай 3 документа в search; используй до 5 только если это явно полезно пользователю. Передай query и полный массив documents из результата search в summarize без потери, изменения или выдумывания данных. У каждого document разрешены только поля title, url и text: никогда не добавляй url_note, description, source или другие поля. Затем передай query, summary и sources из результата summarize в save_to_file без изменения; у каждого source разрешены только title и url. Используй имя .md из запроса пользователя либо безопасное описательное имя. После успешного сохранения сообщи абсолютный путь, SHA-256 и использованные источники. Основывай финальный ответ только на результатах MCP.`"
+            },
+            {
+              "rank": 3,
+              "score": 0.5356410869501395,
+              "chunk_id": "structural-dd22c45ec2e83fc8b71d44f3",
+              "source": "day-20/internal/artifact/server.go",
+              "section": "package artifact",
+              "text": "package artifact\n\nimport (\n\t\"ai-challenge/day-20/internal/domain\"\n\tc \"ai-challenge/day-20/internal/mcpcontract\"\n\t\"context\"\n\t\"encoding/json\"\n\t\"github.com/modelcontextprotocol/go-sdk/mcp\"\n\t\"net/http\"\n)"
+            },
+            {
+              "rank": 4,
+              "score": 0.521193340237861,
+              "chunk_id": "structural-02a0d96a15d2f293c21b27f2",
+              "source": "day-20/internal/agent/agent.go",
+              "section": "const SystemPrompt",
+              "text": "const SystemPrompt = `Ты — агент-оркестратор трёх независимых MCP-серверов. Всегда самостоятельно решай, какие инструменты нужны и в каком порядке их вызывать, через tool_choice=auto. Для простого запроса используй только нужные инструменты: Wikipedia — knowledge_search и при необходимости knowledge_summarize; GitHub — github_get_repository или github_get_latest_release; файлы — artifact_list_files или artifact_read_file. Для полного исследования собери knowledge summary, repository и latest release; независимые Knowledge и GitHub операции можно выполнять в выбранном тобой порядке. Соблюдай только зависимости данных: knowledge_summarize получает точный результат knowledge_search, artifact_build_report получает точные результаты knowledge и GitHub, artifact_save_to_file получает точный результат artifact_build_report. После сохранения дай финальный ответ с путём и SHA-256. Можно повторять независимые поисковые вызовы, если это полезно. Не добавляй полей вне JSON Schema и не изменяй structured results при передаче.`"
+            },
+            {
+              "rank": 5,
+              "score": 0.5079864762516402,
+              "chunk_id": "structural-9f12345845b43a929207fe29",
+              "source": "day-20/internal/mcpcontract/schema.go",
+              "section": "package mcpcontract",
+              "text": "package mcpcontract"
+            }
+          ]
+        },
+        "citations": [
+          {
+            "id": "[S1]",
+            "source": "day-20/internal/artifact/server.go",
+            "section": "const SaveTool",
+            "chunk_id": "structural-70bc5348feb26b9eda1d62d0"
+          }
+        ],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 4538,
+          "prompt_tokens": 1241,
+          "completion_tokens": 104,
+          "attempts": 1,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "plain_concepts": {
+        "matched": 0,
+        "total": 4,
+        "coverage": 0,
+        "all": false,
+        "missing": [
+          "валидация имени",
+          "защита от traversal",
+          "atomic write",
+          "лимит размера"
+        ]
+      },
+      "rag_concepts": {
+        "matched": 0,
+        "total": 4,
+        "coverage": 0,
+        "all": false,
+        "missing": [
+          "валидация имени",
+          "защита от traversal",
+          "atomic write",
+          "лимит размера"
+        ]
+      },
+      "top_k_source_recall": 0.3333333333333333,
+      "cited_source_recall": 0.3333333333333333
+    },
+    {
+      "id": "q08-session-history",
+      "question": "Как web-приложение хранит историю диалога по session cookie и что делает кнопка нового диалога?",
+      "expected_answer": "Случайный session ID хранится в HttpOnly SameSite cookie, а серверная map содержит ограниченное число последних turn-ов с mutex. Новый диалог удаляет conversation по ID и истекает cookie, не затрагивая MCP-расписания.",
+      "required_concepts": [
+        {
+          "name": "HttpOnly session cookie",
+          "alternatives": [
+            "httponly",
+            "session cookie",
+            "cookie"
+          ]
+        },
+        {
+          "name": "серверная ограниченная история",
+          "alternatives": [
+            "последних 12",
+            "ограниченную историю",
+            "turn"
+          ]
+        },
+        {
+          "name": "reset диалога",
+          "alternatives": [
+            "удаляет сессию",
+            "очищает историю",
+            "истекает cookie"
+          ]
+        },
+        {
+          "name": "расписания сохраняются",
+          "alternatives": [
+            "не удаляет расписания",
+            "расписания не затрагиваются",
+            "mcp-расписания"
+          ]
+        }
+      ],
+      "expected_sources": [
+        "day-18/internal/web/sessions.go",
+        "day-18/internal/web/server.go",
+        "day-18/README.md"
+      ],
+      "plain": {
+        "mode": "plain",
+        "question": "Как web-приложение хранит историю диалога по session cookie и что делает кнопка нового диалога?",
+        "answer": "Web-приложение хранит историю диалога обычно через сессионные cookies, чтобы сохранять состояние между запросами. Кнопка нового диалога обычно используется для создания нового сессионного сеанса или диалога, что позволяет пользователю начать новый разговор или переписку без необходимости авторизации заново.",
+        "model": "qwen2.5:3b",
+        "citations": [],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 2058,
+          "prompt_tokens": 139,
+          "completion_tokens": 81,
+          "attempts": 1,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "rag": {
+        "mode": "rag",
+        "question": "Как web-приложение хранит историю диалога по session cookie и что делает кнопка нового диалога?",
+        "answer": "Web-приложение хранит историю диалога по session cookie с именем `day18_agent_session`. Количество последних полных ходов диалога составляет 12. Кнопка «Новый диалог» очищает только историю чата, расписания и снимки MCP не удаляются. История чата хранится в памяти `agent-app` и сбрасывается при его перезапуске.\n\n[С1] В приложении используется HttpOnly session cookie для хранения истории диалога. Кнопка «Новый диалог» очищает только историю чата, расписания и снимки MCP не удаляются.\n\n[С2] Тестовый код в [S2] подтверждает, что при повторном запросе с использованием сохраненной session cookie, приложение может восстановить историю диалога.\n\n[С3] Константа `sessionCookieName` в [S3] указывает на имя session cookie, используемого для хранения истории диалога.\n\n[С4] Тестовый код в [S4] показывает, что приложение передает историю диалога в следующий запрос и восстанавливает её при повторном запросе с использованием сохраненной session cookie.\n\n[С5] Метод `get` в [S5] conversationStore подтверждает, что приложение использует session cookie для хранения и восстановления истории диалога.",
+        "model": "qwen2.5:3b",
+        "index": "../day-21/artifacts/index-structural.json",
+        "retrieval": {
+          "top_k": 5,
+          "duration_ms": 126,
+          "chunks": [
+            {
+              "rank": 1,
+              "score": 0.8061510009601872,
+              "chunk_id": "structural-30be5c06a819a4ce27c31900",
+              "source": "day-18/README.md",
+              "section": "Day 18 — Unified persistent MCP agent \u003e История диалога",
+              "text": "## История диалога\n\nWeb-приложение выдаёт браузеру HttpOnly session cookie и хранит последние 12 полных ходов диалога. В следующий запрос модели передаются предыдущие сообщения вместе с MCP tool calls и результатами, поэтому фразы вроде «останови созданный монитор» работают без повторного ввода ID. Кнопка «Новый диалог» очищает только историю чата; расписания и снимки MCP при этом не удаляются. История чата хранится в памяти `agent-app` и сбрасывается при его перезапуске.\n\nКлючевые пакеты:\n\n- `internal/mcpmulti` — агрегация каталогов и маршрутизация tool calls по нескольким MCP;\n- `internal/mcpgithub`, `internal/store`, `internal/scheduler`, `internal/githubapi` — GitHub-домен;\n- `internal/mcpcurrency`, `internal/currencystore`, `internal/currencyscheduler`, `internal/frankfurter`, `internal/decimal` — валютный домен;\n- `internal/agent` — общий многошаговый tool-call loop;\n- `internal/web` — общая панель GitHub + валюты."
+            },
+            {
+              "rank": 2,
+              "score": 0.5730369174394059,
+              "chunk_id": "structural-ac28a3aae1d4485c5e56267b",
+              "source": "day-18/internal/web/sessions_test.go",
+              "section": "func TestConversationStoreReusesCookieAndCanReset",
+              "text": "func TestConversationStoreReusesCookieAndCanReset(t *testing.T) {\n\tstore := newConversationStore()\n\tfirstRecorder := httptest.NewRecorder()\n\tfirst := store.get(firstRecorder, httptest.NewRequest(\"GET\", \"/api/chat/history\", nil))\n\tcookies := firstRecorder.Result().Cookies()\n\tif len(cookies) != 1 || cookies[0].Name != sessionCookieName {\n\t\tt.Fatalf(\"cookies = %#v\", cookies)\n\t}\n\tsecondRequest := httptest.NewRequest(\"GET\", \"/api/chat/history\", nil)\n\tsecondRequest.AddCookie(cookies[0])\n\tif second := store.get(httptest.NewRecorder(), secondRequest); second != first {\n\t\tt.Fatal(\"cookie must reuse conversation\")\n\t}\n\tstore.reset(httptest.NewRecorder(), secondRequest)\n\tif len(store.sessions) != 0 {\n\t\tt.Fatalf(\"sessions = %d\", len(store.sessions))\n\t}\n}"
+            },
+            {
+              "rank": 3,
+              "score": 0.5623931390571424,
+              "chunk_id": "structural-dcad4874e0b158fd26953bdb",
+              "source": "day-18/internal/web/sessions.go",
+              "section": "const sessionCookieName, maxConversationTurns, maxConversationCount",
+              "text": "const (\n\tsessionCookieName    = \"day18_agent_session\"\n\tmaxConversationTurns = 12\n\tmaxConversationCount = 1024\n)"
+            },
+            {
+              "rank": 4,
+              "score": 0.5582232542061109,
+              "chunk_id": "structural-cadc590fd22ddfc055e29ec0",
+              "source": "day-18/internal/web/server_test.go",
+              "section": "func TestChatSessionPassesHistoryToNextRequestAndRestoresIt",
+              "text": "func TestChatSessionPassesHistoryToNextRequestAndRestoresIt(t *testing.T) {\n\tchatAgent := \u0026historyAgent{}\n\thandler := Handler(chatAgent, nil)\n\n\tfirst := httptest.NewRecorder()\n\thandler.ServeHTTP(first, httptest.NewRequest(http.MethodPost, \"/api/chat\", strings.NewReader(`{\"message\":\"first\"}`)))\n\tif first.Code != http.StatusOK {\n\t\tt.Fatalf(\"first status=%d body=%s\", first.Code, first.Body.String())\n\t}\n\tcookies := first.Result().Cookies()\n\tif len(cookies) != 1 {\n\t\tt.Fatalf(\"cookies=%#v\", cookies)\n\t}\n\n\tsecondRequest := httptest.NewRequest(http.MethodPost, \"/api/chat\", strings.NewReader(`{\"message\":\"second\"}`))\n\tsecondRequest.AddCookie(cookies[0])\n\tsecond := httptest.NewRecorder()\n\thandler.ServeHTTP(second, secondRequest)\n\tif second.Code != http.StatusOK {\n\t\tt.Fatalf(\"second status=%d body=%s\", second.Code, second.Body.String())\n\t}\n\tif len(chatAgent.histories) != 2 || len(chatAgent.histories[0]) != 0 || len(chatAgent.histories[1]) != 2 || chatAgent.histories[1][0].Content != \"first\" {\n\t\tt.Fatalf(\"histories=%#v\", chatAgent.histories)\n\t}\n\n\thistoryRequest := httptest.NewRequest(http.MethodGet, \"/api/chat/history\", nil)\n\thistoryRequest.AddCookie(cookies[0])\n\thistory := httptest.NewRecorder()\n\thandler.ServeHTTP(history, historyRequest)\n\tvar payload struct {\n\t\tMessages []historyMessage `json:\"messages\"`\n\t}\n\tif err := json.Unmarshal(history.Body.Bytes(), \u0026payload); err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif len(payload.Messages) != 4 || payload.Messages[0].Content != \"first\" || payload.Messages[2].Content != \"second\" {\n\t\tt.Fatalf(\"messages=%#v\", payload.Messages)\n\t}\n}"
+            },
+            {
+              "rank": 5,
+              "score": 0.555726743068416,
+              "chunk_id": "structural-9b290b620f2f98932eea4caa",
+              "source": "day-19/internal/web/sessions.go",
+              "section": "method (*conversationStore).get",
+              "text": "func (s *conversationStore) get(w http.ResponseWriter, r *http.Request) *conversation {\n\tid := \"\"\n\tif cookie, err := r.Cookie(\"day19_session\"); err == nil {\n\t\tid = cookie.Value\n\t}\n\ts.mu.Lock()\n\tdefer s.mu.Unlock()\n\tif existing := s.sessions[id]; id != \"\" \u0026\u0026 existing != nil {\n\t\treturn existing\n\t}\n\tvar raw [24]byte\n\t_, _ = rand.Read(raw[:])\n\tid = hex.EncodeToString(raw[:])\n\tcreated := \u0026conversation{}\n\ts.sessions[id] = created\n\thttp.SetCookie(w, \u0026http.Cookie{Name: \"day19_session\", Value: id, Path: \"/\", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: 86400})\n\treturn created\n}"
+            }
+          ]
+        },
+        "citations": [
+          {
+            "id": "[S2]",
+            "source": "day-18/internal/web/sessions_test.go",
+            "section": "func TestConversationStoreReusesCookieAndCanReset",
+            "chunk_id": "structural-ac28a3aae1d4485c5e56267b"
+          },
+          {
+            "id": "[S3]",
+            "source": "day-18/internal/web/sessions.go",
+            "section": "const sessionCookieName, maxConversationTurns, maxConversationCount",
+            "chunk_id": "structural-dcad4874e0b158fd26953bdb"
+          },
+          {
+            "id": "[S4]",
+            "source": "day-18/internal/web/server_test.go",
+            "section": "func TestChatSessionPassesHistoryToNextRequestAndRestoresIt",
+            "chunk_id": "structural-cadc590fd22ddfc055e29ec0"
+          },
+          {
+            "id": "[S5]",
+            "source": "day-19/internal/web/sessions.go",
+            "section": "method (*conversationStore).get",
+            "chunk_id": "structural-9b290b620f2f98932eea4caa"
+          }
+        ],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 11123,
+          "prompt_tokens": 1746,
+          "completion_tokens": 343,
+          "attempts": 1,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "plain_concepts": {
+        "matched": 1,
+        "total": 4,
+        "coverage": 0.25,
+        "all": false,
+        "missing": [
+          "серверная ограниченная история",
+          "reset диалога",
+          "расписания сохраняются"
+        ]
+      },
+      "rag_concepts": {
+        "matched": 1,
+        "total": 4,
+        "coverage": 0.25,
+        "all": false,
+        "missing": [
+          "серверная ограниченная история",
+          "reset диалога",
+          "расписания сохраняются"
+        ]
+      },
+      "top_k_source_recall": 0.6666666666666666,
+      "cited_source_recall": 0.3333333333333333
+    },
+    {
+      "id": "q09-mcp-handshake",
+      "question": "Как минимальный Go MCP-клиент устанавливает соединение и получает список tools с пагинацией?",
+      "expected_answer": "Клиент создаёт официальный mcp.Client и StreamableClientTransport, вызывает Connect для initialize handshake и читает InitializeResult. Затем повторяет session.ListTools, передавая NextCursor до пустого cursor.",
+      "required_concepts": [
+        {
+          "name": "Streamable HTTP transport",
+          "alternatives": [
+            "streamable",
+            "streamableclienttransport"
+          ]
+        },
+        {
+          "name": "initialize handshake",
+          "alternatives": [
+            "initialize",
+            "handshake",
+            "connect"
+          ]
+        },
+        {
+          "name": "pagination cursor",
+          "alternatives": [
+            "nextcursor",
+            "cursor",
+            "пагинац"
+          ]
+        }
+      ],
+      "expected_sources": [
+        "day-16/internal/mcpdemo/client.go",
+        "day-16/README.md"
+      ],
+      "plain": {
+        "mode": "plain",
+        "question": "Как минимальный Go MCP-клиент устанавливает соединение и получает список tools с пагинацией?",
+        "answer": "Минимальный Go MCP-клиент устанавливает соединение с сервером MCP и получает список инструментов с пагинацией следующим образом:\n\n1. Устанавливает соединение с сервером MCP через HTTP или HTTPS.\n2. Отправляет запрос на получение списка инструментов, используя пагинацию для обработки большого количества инструментов в нескольких запросах.\n3. Обрабатывает ответ сервера, который включает список инструментов и метаданные о следующем списке инструментов для получения.\n4. Повторяет шаги 2 и 3, пока не будет получено все инструменты.\n\nЭтот подход позволяет клиенту эффективно обрабатывать большие объемы данных, не загружая сервер и не тормозя процесс взаимодействия.",
+        "model": "qwen2.5:3b",
+        "citations": [],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 5226,
+          "prompt_tokens": 137,
+          "completion_tokens": 203,
+          "attempts": 1,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "rag": {
+        "mode": "rag",
+        "question": "Как минимальный Go MCP-клиент устанавливает соединение и получает список tools с пагинацией?",
+        "answer": "Минимальный Go MCP-клиент устанавливает соединение с сервером MCP по адресу [S1] и устанавливает транспортный объект [S2]. Затем он вызывает метод [S2].Connect, передавая контекст [S2] и транспортный объект [S2]. В случае успешного соединения, клиент вызывает метод [S2].ListTools с пустыми параметрами, чтобы получить первый список инструментов. Если следующий курсор [S2] не пуст, клиент продолжает вызывать [S2].ListTools с указанным курсором, добавляя новые инструменты к уже полученным. Этот процесс повторяется до тех пор, пока следующий курсор не станет пустым.",
+        "model": "qwen2.5:3b",
+        "index": "../day-21/artifacts/index-structural.json",
+        "retrieval": {
+          "top_k": 5,
+          "duration_ms": 739,
+          "chunks": [
+            {
+              "rank": 1,
+              "score": 0.8167779316039006,
+              "chunk_id": "structural-1e2b0064262053e9b004765a",
+              "source": "day-16/README.md",
+              "section": "Day 16 — MCP connection and tools/list",
+              "text": "# Day 16 — MCP connection and tools/list\n\nМинимальный MCP-проект на официальном Go SDK:\n\n- `cmd/server` поднимает Streamable HTTP MCP endpoint `/mcp`;\n- сервер регистрирует инструмент `server_status`;\n- `cmd/client` устанавливает MCP-соединение и получает полный список tools;\n- интеграционный тест проверяет handshake, версию протокола и схему tool;\n- Docker-контейнер запущен на VPS и доступен только через SSH-туннель."
+            },
+            {
+              "rank": 2,
+              "score": 0.704705470660885,
+              "chunk_id": "structural-8b8adfcb6bcdc36d1cc5cb1d",
+              "source": "day-16/internal/mcpdemo/client.go",
+              "section": "func ConnectAndListTools",
+              "text": "// ConnectAndListTools connects to endpoint and follows every tools/list page.\nfunc ConnectAndListTools(ctx context.Context, endpoint string) (*ConnectionResult, error) {\n\ttransport := \u0026mcp.StreamableClientTransport{\n\t\tEndpoint: endpoint,\n\t\tHTTPClient: \u0026http.Client{\n\t\t\tTimeout: 15 * time.Second,\n\t\t},\n\t\tDisableStandaloneSSE: true,\n\t}\n\tclient := mcp.NewClient(\n\t\t\u0026mcp.Implementation{Name: \"day16-mcp-client\", Version: ServerVersion},\n\t\tnil,\n\t)\n\n\tsession, err := client.Connect(ctx, transport, nil)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"connect to MCP server: %w\", err)\n\t}\n\tdefer session.Close()\n\n\tresult := \u0026ConnectionResult{}\n\tif initialized := session.InitializeResult(); initialized != nil {\n\t\tresult.ProtocolVersion = initialized.ProtocolVersion\n\t\tif initialized.ServerInfo != nil {\n\t\t\tresult.ServerName = initialized.ServerInfo.Name\n\t\t\tresult.ServerVersion = initialized.ServerInfo.Version\n\t\t}\n\t}\n\n\tparams := \u0026mcp.ListToolsParams{}\n\tfor {\n\t\tpage, err := session.ListTools(ctx, params)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"list MCP tools: %w\", err)\n\t\t}\n\t\tresult.Tools = append(result.Tools, page.Tools...)\n\t\tif page.NextCursor == \"\" {\n\t\t\tbreak\n\t\t}\n\t\tparams.Cursor = page.NextCursor\n\t}\n\n\treturn result, nil\n}"
+            },
+            {
+              "rank": 3,
+              "score": 0.6479647368890438,
+              "chunk_id": "structural-9adc7c97de777669396a5699",
+              "source": "day-20/README.md",
+              "section": "Day 20 — Orchestration MCP",
+              "text": "# Day 20 — Orchestration MCP\n\nСамостоятельный Go-модуль с тремя независимыми Streamable HTTP MCP-серверами и агентом DeepSeek. Агент получает объединённый `tools/list`, сохраняет владельца каждого инструмента и маршрутизирует каждый `tools/call` в соответствующую MCP-сессию."
+            },
+            {
+              "rank": 4,
+              "score": 0.6346879310706651,
+              "chunk_id": "structural-29bb2f2b88c68671a52ea4c1",
+              "source": "day-16/internal/mcpdemo/integration_test.go",
+              "section": "func TestConnectAndListTools",
+              "text": "func TestConnectAndListTools(t *testing.T) {\n\thttpServer := httptest.NewServer(Handler())\n\tt.Cleanup(httpServer.Close)\n\n\tctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)\n\tdefer cancel()\n\n\tresult, err := ConnectAndListTools(ctx, httpServer.URL+\"/mcp\")\n\tif err != nil {\n\t\tt.Fatalf(\"ConnectAndListTools() error = %v\", err)\n\t}\n\tif result.ServerName != ServerName {\n\t\tt.Fatalf(\"server name = %q, want %q\", result.ServerName, ServerName)\n\t}\n\tif result.ProtocolVersion == \"\" {\n\t\tt.Fatal(\"protocol version is empty\")\n\t}\n\tif len(result.Tools) != 1 {\n\t\tt.Fatalf(\"tool count = %d, want 1\", len(result.Tools))\n\t}\n\tif result.Tools[0].Name != ToolName {\n\t\tt.Fatalf(\"tool name = %q, want %q\", result.Tools[0].Name, ToolName)\n\t}\n\tif result.Tools[0].InputSchema == nil {\n\t\tt.Fatal(\"tool input schema is nil\")\n\t}\n}"
+            },
+            {
+              "rank": 5,
+              "score": 0.6311948711947172,
+              "chunk_id": "structural-7aea3ea6336972e8de5c70ca",
+              "source": "day-16/cmd/client/main.go",
+              "section": "func main",
+              "text": "func main() {\n\tdefaultEndpoint := os.Getenv(\"MCP_ENDPOINT\")\n\tif defaultEndpoint == \"\" {\n\t\tdefaultEndpoint = \"http://127.0.0.1:8080/mcp\"\n\t}\n\tendpoint := flag.String(\"endpoint\", defaultEndpoint, \"Streamable HTTP MCP endpoint\")\n\tflag.Parse()\n\n\tctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)\n\tdefer cancel()\n\n\tresult, err := mcpdemo.ConnectAndListTools(ctx, *endpoint)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\n\tfmt.Println(\"MCP connection established\")\n\tfmt.Printf(\"Server: %s %s\\n\", result.ServerName, result.ServerVersion)\n\tfmt.Printf(\"Protocol: %s\\n\", result.ProtocolVersion)\n\tfmt.Printf(\"Tools (%d):\\n\", len(result.Tools))\n\tfor _, tool := range result.Tools {\n\t\tfmt.Printf(\"- %s: %s\\n\", tool.Name, tool.Description)\n\t}\n}"
+            }
+          ]
+        },
+        "citations": [
+          {
+            "id": "[S1]",
+            "source": "day-16/README.md",
+            "section": "Day 16 — MCP connection and tools/list",
+            "chunk_id": "structural-1e2b0064262053e9b004765a"
+          },
+          {
+            "id": "[S2]",
+            "source": "day-16/internal/mcpdemo/client.go",
+            "section": "func ConnectAndListTools",
+            "chunk_id": "structural-8b8adfcb6bcdc36d1cc5cb1d"
+          }
+        ],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 6889,
+          "prompt_tokens": 1582,
+          "completion_tokens": 181,
+          "attempts": 1,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "plain_concepts": {
+        "matched": 1,
+        "total": 3,
+        "coverage": 0.3333333333333333,
+        "all": false,
+        "missing": [
+          "Streamable HTTP transport",
+          "initialize handshake"
+        ]
+      },
+      "rag_concepts": {
+        "matched": 1,
+        "total": 3,
+        "coverage": 0.3333333333333333,
+        "all": false,
+        "missing": [
+          "Streamable HTTP transport",
+          "pagination cursor"
+        ]
+      },
+      "top_k_source_recall": 1,
+      "cited_source_recall": 1
+    },
+    {
+      "id": "q10-wikipedia-search",
+      "question": "Как knowledge search обращается к Wikipedia, ограничивает ответ и обрабатывает пустые результаты?",
+      "expected_answer": "Клиент вызывает MediaWiki action=query с generator=search и extracts|info, валидирует язык/limit, timeout и HTTP/JSON/API errors. Тело ограничено, тексты обрезаются, некорректные документы отбрасываются, а пустой список возвращается как успешный count=0.",
+      "required_concepts": [
+        {
+          "name": "MediaWiki query",
+          "alternatives": [
+            "generator=search",
+            "mediawiki",
+            "action=query"
+          ]
+        },
+        {
+          "name": "ограничение ответа",
+          "alternatives": [
+            "2 mib",
+            "огранич",
+            "limitreader"
+          ]
+        },
+        {
+          "name": "валидация документов",
+          "alternatives": [
+            "отбрасываются",
+            "https",
+            "wikipedia.org"
+          ]
+        },
+        {
+          "name": "пустой успешный результат",
+          "alternatives": [
+            "count=0",
+            "пустой список",
+            "ноль документов"
+          ]
+        }
+      ],
+      "expected_sources": [
+        "day-19/internal/pipeline/wikipedia.go",
+        "day-19/internal/pipeline/wikipedia_test.go"
+      ],
+      "plain": {
+        "mode": "plain",
+        "question": "Как knowledge search обращается к Wikipedia, ограничивает ответ и обрабатывает пустые результаты?",
+        "answer": "Knowledge Search обращается к Wikipedia для получения информации, но ограничивает ответы и обрабатывает пустые результаты с помощью интеллектуальной аналитики и фильтрации, чтобы обеспечить точность и полноту информации, предлагаемой пользователям. Это включает в себя анализ контекста запроса, проверку источников и использование алгоритмов для уточнения и упрощения информации. Если результаты пусты, это может быть связано с тем, что информация на определенные запросы не найдена или запрос не был понят.",
+        "model": "qwen2.5:3b",
+        "citations": [],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 2981,
+          "prompt_tokens": 132,
+          "completion_tokens": 131,
+          "attempts": 1,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "rag": {
+        "mode": "rag",
+        "question": "Как knowledge search обращается к Wikipedia, ограничивает ответ и обрабатывает пустые результаты?",
+        "answer": "Knowledge search обращается к Wikipedia через инструмент SearchTool, который в свою очередь вызывает Wikipedia. Если ответы из Wikipedia ограничены, они обрабатываются и возвращаются в ответе Knowledge search. Если результаты пустые, Knowledge search не обращается к другим источникам, так как ограничения касаются только Wikipedia. [S1]",
+        "model": "qwen2.5:3b",
+        "index": "../day-21/artifacts/index-structural.json",
+        "retrieval": {
+          "top_k": 5,
+          "duration_ms": 106,
+          "chunks": [
+            {
+              "rank": 1,
+              "score": 0.6494163949050316,
+              "chunk_id": "structural-1b2c0caeee3e893f0c54502f",
+              "source": "day-20/internal/knowledge/server.go",
+              "section": "const SearchTool",
+              "text": "const SearchTool = \"knowledge_search\""
+            },
+            {
+              "rank": 2,
+              "score": 0.5532525140968738,
+              "chunk_id": "structural-02a0d96a15d2f293c21b27f2",
+              "source": "day-20/internal/agent/agent.go",
+              "section": "const SystemPrompt",
+              "text": "const SystemPrompt = `Ты — агент-оркестратор трёх независимых MCP-серверов. Всегда самостоятельно решай, какие инструменты нужны и в каком порядке их вызывать, через tool_choice=auto. Для простого запроса используй только нужные инструменты: Wikipedia — knowledge_search и при необходимости knowledge_summarize; GitHub — github_get_repository или github_get_latest_release; файлы — artifact_list_files или artifact_read_file. Для полного исследования собери knowledge summary, repository и latest release; независимые Knowledge и GitHub операции можно выполнять в выбранном тобой порядке. Соблюдай только зависимости данных: knowledge_summarize получает точный результат knowledge_search, artifact_build_report получает точные результаты knowledge и GitHub, artifact_save_to_file получает точный результат artifact_build_report. После сохранения дай финальный ответ с путём и SHA-256. Можно повторять независимые поисковые вызовы, если это полезно. Не добавляй полей вне JSON Schema и не изменяй structured results при передаче.`"
+            },
+            {
+              "rank": 3,
+              "score": 0.5385169872965461,
+              "chunk_id": "structural-5f7fe11f5be896804b84c790",
+              "source": "day-19/internal/agent/agent.go",
+              "section": "const SystemPrompt",
+              "text": "const SystemPrompt = `Ты — агент исследовательского пайплайна. Для любого запроса найти информацию, подготовить краткую сводку и сохранить её ты обязан самостоятельно выбрать MCP tools через tool_choice=auto и вызвать ровно три отдельных инструмента строго последовательно: search → summarize → save_to_file. Никогда не пропускай этапы и не имитируй их текстом. Обычно запрашивай 3 документа в search; используй до 5 только если это явно полезно пользователю. Передай query и полный массив documents из результата search в summarize без потери, изменения или выдумывания данных. У каждого document разрешены только поля title, url и text: никогда не добавляй url_note, description, source или другие поля. Затем передай query, summary и sources из результата summarize в save_to_file без изменения; у каждого source разрешены только title и url. Используй имя .md из запроса пользователя либо безопасное описательное имя. После успешного сохранения сообщи абсолютный путь, SHA-256 и использованные источники. Основывай финальный ответ только на результатах MCP.`"
+            },
+            {
+              "rank": 4,
+              "score": 0.5335558237083708,
+              "chunk_id": "structural-a1c41d127c3b4acf1b4b57c9",
+              "source": "day-20/internal/knowledge/server.go",
+              "section": "const SummarizeTool",
+              "text": "const SummarizeTool = \"knowledge_summarize\""
+            },
+            {
+              "rank": 5,
+              "score": 0.5284185906877616,
+              "chunk_id": "structural-a5087e3cb9a92e34d41e6326",
+              "source": "day-20/internal/knowledge/client.go",
+              "section": "package knowledge",
+              "text": "package knowledge\n\nimport (\n\t\"context\"\n\t\"encoding/json\"\n\t\"errors\"\n\t\"fmt\"\n\t\"io\"\n\t\"net/http\"\n\t\"net/url\"\n\t\"strings\"\n\t\"time\"\n\n\t\"ai-challenge/day-20/internal/domain\"\n)"
+            }
+          ]
+        },
+        "citations": [
+          {
+            "id": "[S1]",
+            "source": "day-20/internal/knowledge/server.go",
+            "section": "const SearchTool",
+            "chunk_id": "structural-1b2c0caeee3e893f0c54502f"
+          }
+        ],
+        "invalid_citations": [],
+        "generation": {
+          "duration_ms": 5928,
+          "prompt_tokens": 2635,
+          "completion_tokens": 154,
+          "attempts": 2,
+          "temperature": 0,
+          "max_tokens": 512
+        }
+      },
+      "plain_concepts": {
+        "matched": 1,
+        "total": 4,
+        "coverage": 0.25,
+        "all": false,
+        "missing": [
+          "MediaWiki query",
+          "валидация документов",
+          "пустой успешный результат"
+        ]
+      },
+      "rag_concepts": {
+        "matched": 1,
+        "total": 4,
+        "coverage": 0.25,
+        "all": false,
+        "missing": [
+          "MediaWiki query",
+          "валидация документов",
+          "пустой успешный результат"
+        ]
+      },
+      "top_k_source_recall": 0,
+      "cited_source_recall": 0
+    }
+  ],
+  "summary": {
+    "questions": 10,
+    "plain": {
+      "concept_coverage": 0.25,
+      "all_concepts_rate": 0,
+      "average_generation_ms": 3040,
+      "average_answer_length_runes": 418.5,
+      "average_prompt_tokens": 139.8,
+      "average_completion_tokens": 116.8
+    },
+    "rag": {
+      "concept_coverage": 0.41666666666666663,
+      "all_concepts_rate": 0.1,
+      "average_generation_ms": 8525,
+      "average_answer_length_runes": 654.3,
+      "average_prompt_tokens": 2100.9,
+      "average_completion_tokens": 227.3
+    },
+    "retrieval": {
+      "expected_source_recall_top_k": 0.4416666666666666,
+      "expected_source_recall_citations": 0.3333333333333333,
+      "invalid_citations": 0,
+      "average_retrieval_ms": 148.5
+    },
+    "errors": 0
+  }
+}

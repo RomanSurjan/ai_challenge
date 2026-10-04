@@ -1,0 +1,488 @@
+{
+  "generated_at": "2026-10-04T17:42:17.443584Z",
+  "positive_dataset": "eval/questions.json",
+  "positive_dataset_sha256": "013e72b5fe3ce770b526ee47e63ec7d17b07aca3e2bcdd89e9ea25f42c2ddbe7",
+  "negative_dataset": "eval/abstention_questions.json",
+  "negative_dataset_sha256": "26a18131240f5783706cc1a2b51b385cd523c8c67e5b6042626893c18bc715d9",
+  "score_formula": "maximum cosine among chunks in the Day 23 filtered final context; empty context scores 0; sufficient iff context is non-empty and score \u003e= threshold",
+  "selection_rule": "maximum F1 for sufficient-context classification with false-refusal rate \u003c= 20%; ties: lower unsafe-answer rate, then higher threshold",
+  "items": [
+    {
+      "id": "q01-multi-mcp-routing",
+      "question": "Как единый агент объединяет каталоги нескольких MCP-серверов и маршрутизирует tool calls владельцу инструмента?",
+      "expected_sufficient": true,
+      "score": 0.7182587435176594,
+      "final_context_size": 5
+    },
+    {
+      "id": "q02-monitor-claim",
+      "question": "Как планировщик мониторинга атомарно захватывает просроченный запуск и не допускает дубликаты после перезапуска?",
+      "expected_sufficient": true,
+      "score": 0.5724912194761278,
+      "final_context_size": 2
+    },
+    {
+      "id": "q03-decimal-currency",
+      "question": "Почему валютные суммы не вычисляются через float64 и как реализована точная десятичная арифметика?",
+      "expected_sufficient": true,
+      "score": 0.5542196951557264,
+      "final_context_size": 5
+    },
+    {
+      "id": "q04-github-http-safety",
+      "question": "Какие ограничения и проверки применяются при запросе метаданных публичного репозитория GitHub?",
+      "expected_sufficient": true,
+      "score": 0.6264312390523683,
+      "final_context_size": 5
+    },
+    {
+      "id": "q05-agent-tool-loop",
+      "question": "Как агент сохраняет tool_call_id и передаёт результат MCP-инструмента обратно модели в следующем раунде?",
+      "expected_sufficient": true,
+      "score": 0.675013263840894,
+      "final_context_size": 5
+    },
+    {
+      "id": "q06-pipeline-integrity",
+      "question": "Как в композиции search summarize save_to_file проверяется целостность данных между этапами?",
+      "expected_sufficient": true,
+      "score": 0.6992418453787099,
+      "final_context_size": 5
+    },
+    {
+      "id": "q07-artifact-sandbox",
+      "question": "Как Artifact MCP безопасно сохраняет отчёты и предотвращает выход пути за разрешённый каталог?",
+      "expected_sufficient": true,
+      "score": 0.6129942637810242,
+      "final_context_size": 5
+    },
+    {
+      "id": "q08-session-history",
+      "question": "Как web-приложение хранит историю диалога по session cookie и что делает кнопка нового диалога?",
+      "expected_sufficient": true,
+      "score": 0.8061510009601872,
+      "final_context_size": 5
+    },
+    {
+      "id": "q09-mcp-handshake",
+      "question": "Как минимальный Go MCP-клиент устанавливает соединение и получает список tools с пагинацией?",
+      "expected_sufficient": true,
+      "score": 0.8167779316039006,
+      "final_context_size": 5
+    },
+    {
+      "id": "q10-wikipedia-search",
+      "question": "Как knowledge search обращается к Wikipedia, ограничивает ответ и обрабатывает пустые результаты?",
+      "expected_sufficient": true,
+      "score": 0.6494163949050316,
+      "final_context_size": 5
+    },
+    {
+      "id": "n01-pediatric-medicine",
+      "question": "Какая дозировка амоксициллина назначается ребёнку семи лет при остром отите?",
+      "expected_sufficient": false,
+      "score": 0,
+      "final_context_size": 0
+    },
+    {
+      "id": "n02-neapolitan-pizza",
+      "question": "Как приготовить тесто для неаполитанской пиццы с холодной ферментацией 72 часа?",
+      "expected_sufficient": false,
+      "score": 0,
+      "final_context_size": 0
+    },
+    {
+      "id": "n03-future-weather",
+      "question": "Какая погода будет в Казани 12 января 2032 года?",
+      "expected_sufficient": false,
+      "score": 0,
+      "final_context_size": 0
+    },
+    {
+      "id": "n04-fictional-revenue",
+      "question": "Какова выручка компании Северный Маяк за третий квартал 2026 года?",
+      "expected_sufficient": false,
+      "score": 0,
+      "final_context_size": 0
+    },
+    {
+      "id": "n05-personal-insurance",
+      "question": "Какой номер моего страхового полиса и когда заканчивается его срок действия?",
+      "expected_sufficient": false,
+      "score": 0,
+      "final_context_size": 0
+    },
+    {
+      "id": "n06-novel-plot",
+      "question": "Перескажи сюжет романа Мастер и Маргарита и объясни финал Воланда.",
+      "expected_sufficient": false,
+      "score": 0,
+      "final_context_size": 0
+    }
+  ],
+  "values": [
+    {
+      "threshold": 0.45,
+      "positive_answer_rate": 1,
+      "false_refusal_rate": 0,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "threshold": 0.46,
+      "positive_answer_rate": 1,
+      "false_refusal_rate": 0,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "threshold": 0.47,
+      "positive_answer_rate": 1,
+      "false_refusal_rate": 0,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "threshold": 0.48,
+      "positive_answer_rate": 1,
+      "false_refusal_rate": 0,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "threshold": 0.49,
+      "positive_answer_rate": 1,
+      "false_refusal_rate": 0,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "threshold": 0.5,
+      "positive_answer_rate": 1,
+      "false_refusal_rate": 0,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "threshold": 0.51,
+      "positive_answer_rate": 1,
+      "false_refusal_rate": 0,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "threshold": 0.52,
+      "positive_answer_rate": 1,
+      "false_refusal_rate": 0,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "threshold": 0.53,
+      "positive_answer_rate": 1,
+      "false_refusal_rate": 0,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "threshold": 0.54,
+      "positive_answer_rate": 1,
+      "false_refusal_rate": 0,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "threshold": 0.55,
+      "positive_answer_rate": 1,
+      "false_refusal_rate": 0,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    {
+      "threshold": 0.56,
+      "positive_answer_rate": 0.9,
+      "false_refusal_rate": 0.1,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.9,
+      "f1": 0.9473684210526316
+    },
+    {
+      "threshold": 0.57,
+      "positive_answer_rate": 0.9,
+      "false_refusal_rate": 0.1,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.9,
+      "f1": 0.9473684210526316
+    },
+    {
+      "threshold": 0.58,
+      "positive_answer_rate": 0.8,
+      "false_refusal_rate": 0.2,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.8,
+      "f1": 0.888888888888889
+    },
+    {
+      "threshold": 0.59,
+      "positive_answer_rate": 0.8,
+      "false_refusal_rate": 0.2,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.8,
+      "f1": 0.888888888888889
+    },
+    {
+      "threshold": 0.6,
+      "positive_answer_rate": 0.8,
+      "false_refusal_rate": 0.2,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.8,
+      "f1": 0.888888888888889
+    },
+    {
+      "threshold": 0.61,
+      "positive_answer_rate": 0.8,
+      "false_refusal_rate": 0.2,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.8,
+      "f1": 0.888888888888889
+    },
+    {
+      "threshold": 0.62,
+      "positive_answer_rate": 0.7,
+      "false_refusal_rate": 0.3,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.7,
+      "f1": 0.8235294117647058
+    },
+    {
+      "threshold": 0.63,
+      "positive_answer_rate": 0.6,
+      "false_refusal_rate": 0.4,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.6,
+      "f1": 0.7499999999999999
+    },
+    {
+      "threshold": 0.64,
+      "positive_answer_rate": 0.6,
+      "false_refusal_rate": 0.4,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.6,
+      "f1": 0.7499999999999999
+    },
+    {
+      "threshold": 0.65,
+      "positive_answer_rate": 0.5,
+      "false_refusal_rate": 0.5,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.5,
+      "f1": 0.6666666666666666
+    },
+    {
+      "threshold": 0.66,
+      "positive_answer_rate": 0.5,
+      "false_refusal_rate": 0.5,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.5,
+      "f1": 0.6666666666666666
+    },
+    {
+      "threshold": 0.67,
+      "positive_answer_rate": 0.5,
+      "false_refusal_rate": 0.5,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.5,
+      "f1": 0.6666666666666666
+    },
+    {
+      "threshold": 0.68,
+      "positive_answer_rate": 0.4,
+      "false_refusal_rate": 0.6,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.4,
+      "f1": 0.5714285714285715
+    },
+    {
+      "threshold": 0.69,
+      "positive_answer_rate": 0.4,
+      "false_refusal_rate": 0.6,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.4,
+      "f1": 0.5714285714285715
+    },
+    {
+      "threshold": 0.7,
+      "positive_answer_rate": 0.3,
+      "false_refusal_rate": 0.7,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.3,
+      "f1": 0.4615384615384615
+    },
+    {
+      "threshold": 0.71,
+      "positive_answer_rate": 0.3,
+      "false_refusal_rate": 0.7,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.3,
+      "f1": 0.4615384615384615
+    },
+    {
+      "threshold": 0.72,
+      "positive_answer_rate": 0.2,
+      "false_refusal_rate": 0.8,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.2,
+      "f1": 0.33333333333333337
+    },
+    {
+      "threshold": 0.73,
+      "positive_answer_rate": 0.2,
+      "false_refusal_rate": 0.8,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.2,
+      "f1": 0.33333333333333337
+    },
+    {
+      "threshold": 0.74,
+      "positive_answer_rate": 0.2,
+      "false_refusal_rate": 0.8,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.2,
+      "f1": 0.33333333333333337
+    },
+    {
+      "threshold": 0.75,
+      "positive_answer_rate": 0.2,
+      "false_refusal_rate": 0.8,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.2,
+      "f1": 0.33333333333333337
+    },
+    {
+      "threshold": 0.76,
+      "positive_answer_rate": 0.2,
+      "false_refusal_rate": 0.8,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.2,
+      "f1": 0.33333333333333337
+    },
+    {
+      "threshold": 0.77,
+      "positive_answer_rate": 0.2,
+      "false_refusal_rate": 0.8,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.2,
+      "f1": 0.33333333333333337
+    },
+    {
+      "threshold": 0.78,
+      "positive_answer_rate": 0.2,
+      "false_refusal_rate": 0.8,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.2,
+      "f1": 0.33333333333333337
+    },
+    {
+      "threshold": 0.79,
+      "positive_answer_rate": 0.2,
+      "false_refusal_rate": 0.8,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.2,
+      "f1": 0.33333333333333337
+    },
+    {
+      "threshold": 0.8,
+      "positive_answer_rate": 0.2,
+      "false_refusal_rate": 0.8,
+      "negative_abstention_rate": 1,
+      "unsafe_answer_rate": 0,
+      "precision": 1,
+      "recall": 0.2,
+      "f1": 0.33333333333333337
+    }
+  ],
+  "selected_threshold": 0.55,
+  "safety_compromise": false,
+  "answer_model_calls": 0
+}
