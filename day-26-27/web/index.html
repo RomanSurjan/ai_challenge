@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Локальный чат с qwen2.5:3b через Ollama">
+    <meta name="color-scheme" content="dark">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230b1020'/%3E%3Cpath d='M17 20h30v19H31l-9 7v-7h-5z' fill='%237c9cff'/%3E%3Ccircle cx='25' cy='30' r='2.5' fill='white'/%3E%3Ccircle cx='32' cy='30' r='2.5' fill='white'/%3E%3Ccircle cx='39' cy='30' r='2.5' fill='white'/%3E%3C/svg%3E">
+    <title>День 26–27 — Local Qwen Chat</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Настройки чата">
+        <div class="brand-row">
+          <div class="brand-mark" aria-hidden="true">Q</div>
+          <div>
+            <div class="brand-name">Local Qwen</div>
+            <div class="brand-caption">Приватно на этом компьютере</div>
+          </div>
+        </div>
+
+        <section class="connection-card" aria-labelledby="connection-heading">
+          <div class="section-label" id="connection-heading">Соединение</div>
+          <div class="connection-main">
+            <span class="status-dot checking" id="status-dot" aria-hidden="true"></span>
+            <span id="status-text">Проверяем Ollama…</span>
+          </div>
+          <div class="connection-detail" id="connection-detail">127.0.0.1:11434</div>
+        </section>
+
+        <section class="settings-section" aria-labelledby="system-heading">
+          <div class="section-heading-row">
+            <label class="section-label" for="system-prompt" id="system-heading">Системный промт</label>
+            <span class="char-count" id="system-count">0 / 4000</span>
+          </div>
+          <textarea
+            id="system-prompt"
+            class="system-prompt"
+            rows="7"
+            maxlength="4000"
+            spellcheck="true"
+            aria-describedby="system-hint"
+          ></textarea>
+          <p class="settings-hint" id="system-hint">Применяется к следующему сообщению вместе со всей историей.</p>
+        </section>
+
+        <div class="local-note">
+          <span aria-hidden="true">⌂</span>
+          <span>Без облачных API. Данные остаются локально.</span>
+        </div>
+      </aside>
+
+      <main class="chat-panel">
+        <header class="chat-header">
+          <div>
+            <h1>Новый диалог</h1>
+            <div class="model-line">
+              <span>Модель</span>
+              <span class="model-pill" id="model-name">qwen2.5:3b</span>
+            </div>
+          </div>
+          <button class="button secondary" id="new-chat-button" type="button">
+            Новый чат
+          </button>
+        </header>
+
+        <div class="error-banner" id="error-banner" role="alert" hidden>
+          <span class="error-icon" aria-hidden="true">!</span>
+          <span id="error-text"></span>
+          <button class="error-close" id="error-close" type="button" aria-label="Закрыть сообщение об ошибке">×</button>
+        </div>
+
+        <section class="messages" id="messages" aria-live="polite" aria-label="Сообщения диалога">
+          <div class="empty-state" id="empty-state">
+            <div class="empty-orbit" aria-hidden="true">
+              <span>Q</span>
+            </div>
+            <h2>Чем займёмся?</h2>
+            <p>Задайте вопрос локальной модели. Контекст этого диалога сохранится после перезагрузки страницы.</p>
+          </div>
+        </section>
+
+        <footer class="composer-wrap">
+          <div class="generation-status" id="generation-status" hidden>
+            <span class="spinner" aria-hidden="true"></span>
+            <span>Модель отвечает…</span>
+          </div>
+          <form class="composer" id="chat-form">
+            <label class="visually-hidden" for="message-input">Сообщение</label>
+            <textarea
+              id="message-input"
+              rows="1"
+              maxlength="12000"
+              placeholder="Сообщение для локальной модели…"
+              autocomplete="off"
+              spellcheck="true"
+            ></textarea>
+            <div class="composer-actions">
+              <span class="keyboard-hint">Enter — отправить · Shift+Enter — новая строка</span>
+              <div class="button-row">
+                <button class="button stop" id="stop-button" type="button" disabled>
+                  Остановить
+                </button>
+                <button class="button primary" id="send-button" type="submit">
+                  Отправить
+                </button>
+              </div>
+            </div>
+          </form>
+        </footer>
+      </main>
+    </div>
+    <script src="/app.js" defer></script>
+  </body>
+</html>
