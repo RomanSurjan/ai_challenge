@@ -1,0 +1,13 @@
+/rag-web
+__pycache__/
+*.pyc
+/artifacts/
+
+# Local recordings and logs
+*.mp4
+*.mov
+*.webm
+*.mkv
+*.avi
+*.m4v
+*.log

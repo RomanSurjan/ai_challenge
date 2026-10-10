@@ -1,0 +1,128 @@
+[
+  {
+    "id": "q03-decimal-currency",
+    "question": "Почему валютные суммы не вычисляются через float64 и как реализована точная десятичная арифметика?",
+    "expected_answer": "float64 даёт двоичные ошибки округления. Decimal разбирает строку в целочисленный коэффициент и десятичный scale, выполняет операции целыми числами и форматирует результат без потери десятичных знаков.",
+    "required_concepts": [
+      {
+        "name": "ошибка float64",
+        "alternatives": [
+          "ошибки округления",
+          "двоичное представление",
+          "двоичную систему",
+          "погрешност",
+          "проблем с плавающей точкой",
+          "float64 неточ"
+        ]
+      },
+      {
+        "name": "целочисленное хранение",
+        "alternatives": [
+          "целочисленный коэффициент",
+          "целыми числами",
+          "int64"
+        ]
+      },
+      {
+        "name": "десятичный scale",
+        "alternatives": [
+          "scale",
+          "масштаб",
+          "число знаков после запятой"
+        ]
+      }
+    ],
+    "expected_sources": [
+      "day-18/internal/decimal/decimal.go",
+      "day-18/README.md"
+    ]
+  },
+  {
+    "id": "q07-artifact-sandbox",
+    "question": "Как Artifact MCP безопасно сохраняет отчёты и предотвращает выход пути за разрешённый каталог?",
+    "expected_answer": "Store принимает только безопасное относительное имя .md, запрещает absolute path, .. и разделители, затем сравнивает вычисленный каталог с OutputDir. Запись идёт через временный файл, fsync и atomic rename с лимитом размера.",
+    "required_concepts": [
+      {
+        "name": "валидация имени",
+        "alternatives": [
+          "безопасное относительное",
+          "safe relative",
+          "регулярн"
+        ]
+      },
+      {
+        "name": "защита от traversal",
+        "alternatives": [
+          "..",
+          "path traversal",
+          "выход за каталог"
+        ]
+      },
+      {
+        "name": "atomic write",
+        "alternatives": [
+          "atomic rename",
+          "атомарн",
+          "временный файл"
+        ]
+      },
+      {
+        "name": "лимит размера",
+        "alternatives": [
+          "лимит размера",
+          "maxmarkdown",
+          "512"
+        ]
+      }
+    ],
+    "expected_sources": [
+      "day-20/internal/artifact/store.go",
+      "day-20/internal/artifact/server.go",
+      "day-20/README.md"
+    ]
+  },
+  {
+    "id": "q08-session-history",
+    "question": "Как web-приложение хранит историю диалога по session cookie и что делает кнопка нового диалога?",
+    "expected_answer": "Случайный session ID хранится в HttpOnly SameSite cookie, а серверная map содержит ограниченное число последних turn-ов с mutex. Новый диалог удаляет conversation по ID и истекает cookie, не затрагивая MCP-расписания.",
+    "required_concepts": [
+      {
+        "name": "HttpOnly session cookie",
+        "alternatives": [
+          "httponly",
+          "session cookie",
+          "cookie"
+        ]
+      },
+      {
+        "name": "серверная ограниченная история",
+        "alternatives": [
+          "последних 12",
+          "ограниченную историю",
+          "turn"
+        ]
+      },
+      {
+        "name": "reset диалога",
+        "alternatives": [
+          "удаляет сессию",
+          "очищает историю",
+          "истекает cookie"
+        ]
+      },
+      {
+        "name": "расписания сохраняются",
+        "alternatives": [
+          "не удаляет расписания",
+          "расписания не затрагиваются",
+          "mcp-расписания"
+        ]
+      }
+    ],
+    "expected_sources": [
+      "day-18/internal/web/sessions.go",
+      "day-18/internal/web/server.go",
+      "day-18/README.md"
+    ]
+  }
+]

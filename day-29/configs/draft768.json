@@ -1,0 +1,10 @@
+{
+  "id": "draft768",
+  "label": "Компактный contract · 768",
+  "model": "qwen2.5:3b",
+  "temperature": 0,
+  "max_tokens": 768,
+  "context_window": 32768,
+  "seed": 0,
+  "prompt_version": "technical-v5"
+}

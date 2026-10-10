@@ -1,0 +1,10 @@
+{
+  "id": "technical1024",
+  "label": "Prompt v3 · 1024",
+  "model": "qwen2.5:3b",
+  "temperature": 0,
+  "max_tokens": 1024,
+  "context_window": 32768,
+  "seed": 0,
+  "prompt_version": "technical-v3"
+}

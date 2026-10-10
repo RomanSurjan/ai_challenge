@@ -1,0 +1,46 @@
+{
+  "frozen_at": "2026-10-10",
+  "historical": "day-28/artifacts/evaluation-local.json used for diagnosis only",
+  "tuning": "eval/tuning.json; 3 questions fixed before model answers",
+  "control": "eval/control.json; six new questions not used for tuning",
+  "regression": "eval/regression.json; 14 historical questions",
+  "order": [
+    "baseline vs technical-v2 at 512/32768/t0",
+    "tokens 768 and 1024 vs technical512",
+    "temperature .2 vs chosen token reference",
+    "context 8192 and 16384 vs 32768 reference",
+    "Q8_0 vs Q4_K_M at same chosen settings",
+    "freeze selected.json before control",
+    "regression pair once",
+    "control pair three repeats alternating order"
+  ],
+  "tuning_repeats": 1,
+  "control_repeats": 3,
+  "warmup": "per-profile fixed ready JSON excluded from measurements",
+  "parallel_generation": false,
+  "context": "full context, identical order and IDs per question, compare prepares once; hashes checked across repeat/stages; no context shortening experiment",
+  "rubric": {
+    "correctness": {
+      "0": "incorrect, irrelevant, false refusal or API failure",
+      "1": "partially correct",
+      "2": "correct without invented facts"
+    },
+    "completeness": {
+      "0": "essential parts absent or false refusal",
+      "1": "some essential parts answered",
+      "2": "all essential parts covered; justified no-data refusal = 2"
+    },
+    "grounding": "manual quote-to-claim entailment separately from exact match",
+    "refusals": "justified vs false relative to actual retrieved context; corpus-only retrieval miss annotated separately"
+  },
+  "selection": "manual quality correctness/completeness first, then successful response latency, then memory; acceptance alone not quality",
+  "judge": "same Qwen2.5 3B Q4, t0 seed0 128 tokens 32768 context auxiliary only",
+  "resources": "api/ps + per-process RSS 250ms observation including start/end; no RSS+VRAM sum; utilization unavailable",
+  "timing": "nonstreaming; TTFT not measured; total includes retrieval, repairs, validation, judge; errors/gates separated",
+  "labels": "benchmark reads only ID and question; labels never enter generator",
+  "holdout_policy": "no changes to selected configuration after control",
+  "tuning_amendment": "v2 pilot unbounded clarification produced truncated JSON; v3 bounds clarification/claims and permits any exact quote (application validator unchanged), evaluated before control",
+  "tuning_amendment_v4": "v3 tokens512/768/1024 failed source/answer linkage; v4 closer to original wording and uses separate refusal schema branch, anchored inline pattern, application validation unchanged; tested on same tuning before control",
+  "tuning_amendment_v5": "v4 and temperature02 still fail duplicated answer/source linking; v5 generates only claims/evidence/status/clarification, answer rendered from draft then all exact quote and source validators run. Exact local runner tokenizer calibrated against 16 calls. All changes before control.",
+  "control_execution_order": "Question order as fixed dataset, three consecutive measured repeats per question, AB/BA alternating globally and for each question; first order alternates between questions."
+}

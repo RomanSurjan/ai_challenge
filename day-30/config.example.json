@@ -1,0 +1,18 @@
+{
+  "host": "127.0.0.1",
+  "port": 8030,
+  "model": "qwen2.5:3b",
+  "ollama_url": "http://127.0.0.1:11434",
+  "proxy_secret": "REPLACE_WITH_RANDOM_SECRET_AT_LEAST_32_CHARS",
+  "allowed_origins": ["https://192.168.3.53:8443", "https://localhost:8443"],
+  "num_ctx": 8192,
+  "num_predict": 512,
+  "rate_per_minute": 10,
+  "burst": 3,
+  "queue_size": 3,
+  "queue_timeout": 30,
+  "request_timeout": 10,
+  "connect_timeout": 5,
+  "read_timeout": 180,
+  "max_connections": 32
+}

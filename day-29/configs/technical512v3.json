@@ -1,0 +1,10 @@
+{
+  "id": "technical512v3",
+  "label": "Новый prompt v3 · 512",
+  "model": "qwen2.5:3b",
+  "temperature": 0,
+  "max_tokens": 512,
+  "context_window": 32768,
+  "seed": 0,
+  "prompt_version": "technical-v3"
+}

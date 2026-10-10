@@ -1,0 +1,8 @@
+{
+  "recorded_at": "2026-10-10T13:30:55.791195+00:00",
+  "reason": "Uncached vs repeated embedding changed cosine scores by up to ~0.00067; source IDs/text/order identical in retrieval probe. Original strict hash check aborted pilot after second pair.",
+  "preserved_pilot": "artifacts/control-pilot-drift.json contains first completed pair; second pair raw was lost because old checkpoint happened after drift guard. No invented reconstruction. Final control is rerun entirely.",
+  "measurement_fix": "For each question capture full first retrieval snapshot (including scores, candidates and source order) for all repeats. Each measured pair still performs and times fresh embedding/retrieval, recorded as observed_retrieval_context/hash; only context delivered to generators/gate/validator is frozen. No snippets removed. Save raw pair before audit guard.",
+  "unchanged": "baseline/selected configs, prompts, thresholds, reranker, control questions, judge, order and repeats remain exactly frozen; no fitting to control answers",
+  "schema": "observed_retrieval_context vs final_context allow inspection of score drift; live UI continues fresh retrieval once per pair."
+}

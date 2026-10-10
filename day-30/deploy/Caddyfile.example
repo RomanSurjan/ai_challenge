@@ -1,0 +1,39 @@
+{
+    admin off
+    log {
+        format filter {
+            wrap json
+            request delete
+        }
+    }
+    auto_https disable_redirects
+    skip_install_trust
+    servers {
+        timeouts {
+            read_header 10s
+            read_body 10s
+            write 240s
+            idle 30s
+        }
+        max_header_size 16KB
+    }
+}
+https://localhost:8443, https://192.168.3.53:8443 {
+    tls internal
+    basic_auth {
+        demo REPLACE_WITH_BCRYPT_HASH
+    }
+    request_body {
+        max_size 256KB
+    }
+    reverse_proxy 127.0.0.1:8030 {
+        flush_interval -1
+        header_up -Authorization
+        header_up X-Authenticated-User {http.auth.user.id}
+        header_up X-Private-Token REPLACE_WITH_RANDOM_PROXY_SECRET
+        transport http {
+            dial_timeout 5s
+            response_header_timeout 220s
+        }
+    }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "draft-q8",
+  "label": "draft-q8",
+  "model": "qwen2.5:3b-instruct-q8_0",
+  "temperature": 0,
+  "max_tokens": 768,
+  "context_window": 32768,
+  "seed": 0,
+  "prompt_version": "technical-v5"
+}

@@ -1,0 +1,16 @@
+{
+  "fixed_before_answers": true,
+  "repeated_ids": [
+    "q01-multi-mcp-routing",
+    "q03-decimal-currency",
+    "q07-artifact-sandbox"
+  ],
+  "repetitions": 3,
+  "initial_condition": "first request in fresh application process; models may already be warm in shared Ollama",
+  "order": "local then cloud; sequential",
+  "memory": false,
+  "rewrite": false,
+  "judge": "local qwen2.5:3b",
+  "temperature": 0,
+  "max_tokens": 512
+}

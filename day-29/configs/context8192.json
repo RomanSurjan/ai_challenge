@@ -1,0 +1,10 @@
+{
+  "id": "context8192",
+  "label": "context8192",
+  "model": "qwen2.5:3b",
+  "temperature": 0,
+  "max_tokens": 768,
+  "context_window": 8192,
+  "seed": 0,
+  "prompt_version": "technical-v4"
+}
